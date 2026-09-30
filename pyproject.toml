@@ -662,7 +662,7 @@ preview = true
 "tests/*" = ["E501", "RUF001", "S101"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "src/collective/matomoaitracker"]
 
 [tool.coverage.run]
 source_pkgs = ["collective.matomoaitracker", "tests"]

@@ -1,113 +1,70 @@
+from collective.matomoaitracker.testing import FUNCTIONAL_TESTING
 from plone.app.testing import SITE_OWNER_NAME
 from plone.app.testing import SITE_OWNER_PASSWORD
 from plone.registry.interfaces import IRegistry
+from plone.testing.zope import Browser
+from typing import Any
+from typing import cast
+from unittest import TestCase
 from zope.component import getUtility
 
-try:
-    from plone.testing.zope import Browser
-except ImportError:
-    from plone.testing.z2 import Browser
 
+class ControlPanelTestCase(TestCase):
+    """Test the addon's control panel using the functional Plone layer."""
 
-class ControlPanelTestCase(base.EasyFormTestCase):
-    """Test that changes in the easyform control panel are actually
-    stored in the registry.
-    """
+    layer = FUNCTIONAL_TESTING
 
     def setUp(self):
-        self.portal_url = self.layer["portal"].absolute_url()
+        portal = cast(Any, self.layer["portal"])
+        self.portal_url = portal.absolute_url()
         self.browser = Browser(self.layer["app"])
         self.browser.handleErrors = False
         self.browser.addHeader(
             "Authorization", "Basic " + SITE_OWNER_NAME + ":" + SITE_OWNER_PASSWORD
         )
 
-    def test_easyform_control_panel_link_to_overview(self):
+    def test_control_panel_link_to_overview(self):
         self.browser.open(self.portal_url + "/@@overview-controlpanel")
-        link = self.browser.getLink("matomoaitracker")
-        self.assertEqual(link.url, "http://nohost/plone/@@matomo-ai-controlpanel")
+        link = self.browser.getLink("Matomo AI Chatbot Tracking")
+        self.assertEqual(link.url, self.portal_url + "/@@matomo-ai-controlpanel")
 
-    def test_easyform_control_panel_contents(self):
+    def test_control_panel_contents(self):
         self.browser.open(self.portal_url + "/@@matomo-ai-controlpanel")
-        self.assertTrue("Matomo Settings" in self.browser.contents)
+        self.assertIn("Matomo Settings", self.browser.contents or "")
 
-    def test_easyform_control_panel_sidebar(self):
+    def test_control_panel_sidebar(self):
         self.browser.open(self.portal_url + "/@@matomo-ai-controlpanel")
-        self.assertTrue("General" in self.browser.contents)
+        self.assertIn("General", self.browser.contents or "")
         link = self.browser.getLink("Add-ons")
-        self.assertEqual(link.url, "http://nohost/plone/prefs_install_products_form")
+        self.assertEqual(link.url, self.portal_url + "/prefs_install_products_form")
 
 
-class ControlPanelFunctionalTestCase(base.EasyFormFunctionalTestCase):
-    """Test that changes in the easyform control panel are actually
-    stored in the registry.
-    """
+class ControlPanelFunctionalTestCase(TestCase):
+    """Test saving the addon's Matomo settings."""
+
+    layer = FUNCTIONAL_TESTING
 
     def setUp(self):
-        self.portal_url = self.layer["portal"].absolute_url()
+        portal = cast(Any, self.layer["portal"])
+        self.portal_url = portal.absolute_url()
         self.browser = Browser(self.layer["app"])
         self.browser.handleErrors = False
         self.browser.addHeader(
             "Authorization", "Basic " + SITE_OWNER_NAME + ":" + SITE_OWNER_PASSWORD
         )
 
-    def test_easyform_control_panel_allowed_fields_saved(self):
-        self.browser.open(self.portal_url + "/@@easyform-controlpanel")
-        self.browser.getControl("Rich Text").selected = False
+    def test_matomo_settings_saved(self):
+        self.browser.open(self.portal_url + "/@@matomo-ai-controlpanel")
+        site_id = self.browser.getControl(label="Matomo Site ID")
+        site_id.value = "42"
+        base_url = self.browser.getControl(label="Matomo Base URL")
+        base_url.value = "https://matomo.example"
         self.browser.getControl("Save").click()
         registry = getUtility(IRegistry)
-        self.assertNotIn(
-            "plone.app.textfield.RichText",
-            registry.records["easyform.allowedFields"].value,
-        )
-
-    def test_easyform_control_panel_CSV_delimiter_saved(self):
-        registry = getUtility(IRegistry)
+        self.assertEqual(registry.records["matomoaitracker.matomo_site_id"].value, 42)
         self.assertEqual(
-            registry.records["easyform.csv_delimiter"].value,
-            ",",
-        )
-        self.browser.open(self.portal_url + "/@@easyform-controlpanel")
-        input = self.browser.getControl(label="CSV delimiter")
-        input.value = ";"
-        self.browser.getControl("Save").click()
-        self.assertEqual(
-            registry.records["easyform.csv_delimiter"].value,
-            ";",
-        )
-
-    def test_easyform_control_panel_CSV_delimiter_limited_to_one_char(self):
-        registry = getUtility(IRegistry)
-        self.assertEqual(
-            registry.records["easyform.csv_delimiter"].value,
-            ",",
-        )
-        self.browser.open(self.portal_url + "/@@easyform-controlpanel")
-        input = self.browser.getControl(label="CSV delimiter")
-        input.value = "comma"
-        self.browser.getControl("Save").click()
-        self.assertTrue("Value is too long" in self.browser.contents)
-        self.assertEqual(
-            registry.records["easyform.csv_delimiter"].value,
-            ",",
-        )
-
-    def test_easyform_control_panel_CSV_delimiter_required(self):
-        registry = getUtility(IRegistry)
-        self.assertEqual(
-            registry.records["easyform.csv_delimiter"].value,
-            ",",
-        )
-        self.browser.open(self.portal_url + "/@@easyform-controlpanel")
-        input = self.browser.getControl(label="CSV delimiter")
-        input.value = ""
-        self.browser.getControl("Save").click()
-        self.assertTrue("Required input is missing." in self.browser.contents)
-        input = self.browser.getControl(label="CSV delimiter")
-        self.assertEqual(input.value, "")
-        self.assertEqual(
-            registry.records["easyform.csv_delimiter"].value,
-            ",",
+            registry.records["matomoaitracker.matomo_base_url"].value,
+            "https://matomo.example",
         )
 
 

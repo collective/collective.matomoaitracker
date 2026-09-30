@@ -18,7 +18,9 @@ class TestSetup(unittest.TestCase):
 
     def test_product_installed(self):
         """Test if collective.matomoaitracker is installed."""
-        self.assertTrue(self.installer.is_product_installed("collective.matomoaitracker"))
+        self.assertTrue(
+            self.installer.is_product_installed("collective.matomoaitracker")
+        )
 
     def test_browserlayer(self):
         """Test that IBrowserLayer is registered."""
@@ -29,7 +31,6 @@ class TestSetup(unittest.TestCase):
 
 
 class TestUninstall(unittest.TestCase):
-
     layer = INTEGRATION_TESTING
 
     def setUp(self):
@@ -39,7 +40,9 @@ class TestUninstall(unittest.TestCase):
 
     def test_product_uninstalled(self):
         """Test if collective.matomoaitracker is cleanly uninstalled."""
-        self.assertFalse(self.installer.is_product_installed("collective.matomoaitracker"))
+        self.assertFalse(
+            self.installer.is_product_installed("collective.matomoaitracker")
+        )
 
     def test_browserlayer_removed(self):
         """Test that IBrowserLayer is removed."""

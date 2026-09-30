@@ -1,8 +1,7 @@
+from collective.matomoaitracker import _
 from zope import schema
 from zope.interface import Interface
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-
-from collective.matomoaitracker import _
 
 
 class IBrowserLayer(IDefaultBrowserLayer):

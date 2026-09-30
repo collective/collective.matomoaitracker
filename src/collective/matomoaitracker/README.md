@@ -34,13 +34,22 @@ The control-panel values are stored in the Plone registry and are the runtime so
 
 ## Varnish Integration 🧊
 
-The addon does not impose a deployment-specific Varnish image or compose stack. Configure Varnish to identify the chatbot User-Agent and call:
+[`varnish/varnish.vcl`](../../../varnish/varnish.vcl) is a `vcl_deliver` insertion snippet for the generated VCL from `plone.recipe.varnish` 6.0.18. Put its contents in that recipe's `vcl_deliver` option; the generated file already imports `std` and defines the surrounding subroutine. Do not load the snippet as a replacement VCL file.
 
-```text
-/@@matomoaitracker?url=<requested-page-url>
+For recognized AI user agents, the snippet writes a `VCL_Log` record containing `MATOMO_AI_TRACK` and the original User-Agent. This avoids an HTTP request in VCL, so cache-hit delivery is not delayed. A cron process should select transactions with that marker, take the path from `ReqURL`, the host from `ReqHeader:Host`, and the scheme from `ReqHeader:X-Forwarded-Proto`, then POST a JSON batch to the Plone origin's `@@matomoaitracker` view:
+
+```json
+{
+	"events": [
+		{
+			"url": "https://example.org/page",
+			"user_agent": "GPTBot/1.0"
+		}
+	]
+}
 ```
 
-The tracking view returns `204` and is designed to be called as a side request while Varnish delivers the requested cached response. The Varnish configuration must provide the appropriate HTTP client VMOD and route the internal request to Plone.
+The view requires the `cmf.ManagePortal` permission, so the cron caller must authenticate with a JWT Bearer token belonging to an authorized account. It returns a `results` array of booleans in input order; retry only events whose result is `false`. The view limits batches to 100 events and rejects malformed, non-HTTP(S), or oversized values before tracking.
 
 ## Development 🛠️
 

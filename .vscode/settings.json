@@ -11,5 +11,10 @@
   "python.testing.pytestEnabled": true,
   "[markdown]": {
     "editor.formatOnSave": false
+  },
+  "chat.tools.terminal.autoApprove": {
+    "./.venv/bin/python": true,
+    "make": true,
+    "ruff": true
   }
 }
