@@ -3,7 +3,7 @@ name = "collective.matomoaitracker"
 dynamic = ["version", "readme"]
 description = "A addon for Plone which allow you to track requests from AI Chatbots to the server in Matomo."
 license = "GPL-2.0-only"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 authors = [
     { name = "Jean-Paul Ladage", email = "j.ladage@zestsoftware.nl" },
 ]
