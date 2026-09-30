@@ -1,0 +1,14 @@
+{
+    "title": "Collective Matomo AI Tracking",
+    "description": "A addon for Plone which allow you to track requests from AI Chatbots to the server in Matomo.",
+    "author": "Jean-Paul Ladage",
+    "email": "j.ladage@zestsoftware.nl",
+    "github_organization": "collective",
+    "use_prerelease_versions": "No",
+    "plone_version": "6.2.2",
+    "python_package_name": "collective.matomoaitracker",
+    "feature_headless": false,
+    "initialize_ci": true,
+    "initialize_documentation": false,
+    "__template__": "backend_addon"
+}

@@ -1,0 +1,28 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="collective.matomoaitracker"
+    >
+
+  <include
+      package="Products.CMFCore"
+      file="permissions.zcml"
+      />
+
+  <browser:page
+      name="matomo-ai-controlpanel"
+      for="Products.CMFCore.interfaces.ISiteRoot"
+      class="collective.matomoaitracker.browser.controlpanel.MatomoAITrackingControlPanelView"
+      permission="cmf.ManagePortal"
+      />
+
+  <browser:page
+      name="matomoaitracker"
+      for="*"
+      class=".tracking.MatomoAIChatbotTrackingView"
+      permission="zope2.View"
+      />
+
+
+</configure>

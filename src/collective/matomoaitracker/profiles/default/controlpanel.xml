@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<object name="portal_controlpanel">
+  <configlet action_id="matomoaitracker"
+             appId="matomoaitracker"
+             category="Products"
+             condition_expr=""
+             icon_expr="string:ui-checks"
+             title="Matomo AI Chatbot Tracking"
+             url_expr="string:${portal_url}/@@matomo-ai-controlpanel"
+             visible="True"
+    >
+      <permission>Manage portal</permission>
+    </configlet>
+</object>
