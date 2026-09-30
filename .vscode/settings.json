@@ -15,6 +15,7 @@
   "chat.tools.terminal.autoApprove": {
     "./.venv/bin/python": true,
     "make": true,
-    "ruff": true
+    "ruff": true,
+    "python3.14": true
   }
 }

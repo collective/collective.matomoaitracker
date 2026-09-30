@@ -66,6 +66,3 @@ class ControlPanelFunctionalTestCase(TestCase):
             registry.records["matomoaitracker.matomo_base_url"].value,
             "https://matomo.example",
         )
-
-
-# EOF
