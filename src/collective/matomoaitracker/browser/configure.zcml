@@ -20,8 +20,8 @@
   <browser:page
       name="matomoaitracker"
       for="*"
-      class=".tracking.MatomoVarnishLogConsumerView"
-      permission="cmf.ManagePortal"
+      class=".tracking.MatomoAIChatbotTrackingView"
+      permission="zope2.View"
       />
 
 

@@ -34,22 +34,15 @@ The control-panel values are stored in the Plone registry and are the runtime so
 
 ## Varnish Integration 🧊
 
-[`varnish/varnish.vcl`](../../../varnish/varnish.vcl) is a `vcl_deliver` insertion snippet for the generated VCL from `plone.recipe.varnish` 6.0.18. Put its contents in that recipe's `vcl_deliver` option; the generated file already imports `std` and defines the surrounding subroutine. Do not load the snippet as a replacement VCL file.
+The addon does not impose a deployment-specific Varnish image or compose stack. [`varnish/varnish.vcl`](../../../varnish/varnish.vcl) is a `vcl_deliver` insertion snippet for Varnish 6.0.18. Add `import curl;` at the top level of the generated VCL, then put the snippet contents in that recipe's `vcl_deliver` option. The generated VCL already imports `std`. Set `MATOMO_AI_PLONE_ORIGIN` in the Varnish service environment to the internal HTTP origin, for example `http://plone:8080`, and ensure requests carry `X-Forwarded-Proto` set to `http` or `https`.
 
-For recognized AI user agents, the snippet writes a `VCL_Log` record containing `MATOMO_AI_TRACK` and the original User-Agent. This avoids an HTTP request in VCL, so cache-hit delivery is not delayed. A cron process should select transactions with that marker, take the path from `ReqURL`, the host from `ReqHeader:Host`, and the scheme from `ReqHeader:X-Forwarded-Proto`, then POST a JSON batch to the Plone origin's `@@matomoaitracker` view:
+For known AI bot User-Agents, the snippet uses the curl VMOD to synchronously call:
 
-```json
-{
-	"events": [
-		{
-			"url": "https://example.org/page",
-			"user_agent": "GPTBot/1.0"
-		}
-	]
-}
+```text
+${MATOMO_AI_PLONE_ORIGIN}/@@matomoaitracker?url=<percent-encoded-requested-page-url>
 ```
 
-The view requires the `cmf.ManagePortal` permission, so the cron caller must authenticate with a JWT Bearer token belonging to an authorized account. It returns a `results` array of booleans in input order; retry only events whose result is `false`. The view limits batches to 100 events and rejects malformed, non-HTTP(S), or oversized values before tracking.
+It forwards the original User-Agent header and escapes the complete requested page URL. The curl connection timeout is 250 ms and the total timeout is 1 second; because the VMOD call is synchronous, it can delay delivery by up to that timeout. Use an internal HTTP Plone origin: the curl VMOD documents HTTPS connections as unsupported.
 
 ## Development 🛠️
 

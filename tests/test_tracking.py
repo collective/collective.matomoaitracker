@@ -1,55 +1,37 @@
-from collective.matomoaitracker.browser.tracking import MatomoVarnishLogConsumerView
-from json import dumps
-from json import loads
+from collective.matomoaitracker.browser.tracking import MatomoAIChatbotTrackingView
 from unittest import TestCase
 from unittest.mock import Mock
 from unittest.mock import patch
 
 
-class TestMatomoVarnishLogConsumerView(TestCase):
-    def make_view(self, payload, method="POST"):
+class TestMatomoAIChatbotTrackingView(TestCase):
+    def make_view(self, url="https://example.org/page", user_agent="GPTBot/1.0"):
         request = Mock()
-        request.method = method
-        request.get.return_value = dumps(payload)
+        request.form = {"url": url}
+        request.getHeader.return_value = user_agent
         request.response = Mock()
-        return MatomoVarnishLogConsumerView(None, request)
+        return MatomoAIChatbotTrackingView(None, request)
 
-    def test_tracks_each_event_with_its_original_user_agent(self):
-        events = [
-            {"url": "https://example.org/page", "user_agent": "GPTBot/1.0"},
-            {"url": "https://example.org/other", "user_agent": "ClaudeBot/1.0"},
-        ]
-        view = self.make_view({"events": events})
+    def test_tracks_synchronously_before_returning_no_content(self):
+        view = self.make_view()
 
-        with patch.object(
-            MatomoVarnishLogConsumerView, "_track", return_value=True
-        ) as track:
-            result = loads(view())
+        with patch.object(MatomoAIChatbotTrackingView, "_track") as track:
+            result = view()
 
-        self.assertEqual(result, {"results": [True, True]})
-        track.assert_any_call("https://example.org/page", "GPTBot/1.0")
-        track.assert_any_call("https://example.org/other", "ClaudeBot/1.0")
+        track.assert_called_once_with("https://example.org/page", "GPTBot/1.0")
+        view.request.response.setStatus.assert_called_once_with(204)
+        view.request.response.setHeader.assert_called_once_with(
+            "Cache-Control", "no-store"
+        )
+        self.assertEqual(result, "")
 
-    def test_rejects_invalid_event_without_tracking_partial_batch(self):
-        events = [
-            {"url": "https://example.org/page", "user_agent": "GPTBot/1.0"},
-            {"url": "javascript:alert(1)", "user_agent": "GPTBot/1.0"},
-        ]
-        view = self.make_view({"events": events})
+    def test_skips_tracking_when_request_data_is_missing(self):
+        for url, user_agent in (("", "GPTBot/1.0"), ("https://example.org", "")):
+            with self.subTest(url=url, user_agent=user_agent):
+                view = self.make_view(url=url, user_agent=user_agent)
 
-        with patch.object(MatomoVarnishLogConsumerView, "_track") as track:
-            result = loads(view())
+                with patch.object(MatomoAIChatbotTrackingView, "_track") as track:
+                    view()
 
-        self.assertEqual(result, {"error": "Invalid event"})
-        view.request.response.setStatus.assert_called_once_with(400)
-        track.assert_not_called()
-
-    def test_requires_post(self):
-        view = self.make_view({"events": []}, method="GET")
-
-        with patch.object(MatomoVarnishLogConsumerView, "_track") as track:
-            result = loads(view())
-
-        self.assertEqual(result, {"error": "POST required"})
-        view.request.response.setStatus.assert_called_once_with(405)
-        track.assert_not_called()
+                track.assert_not_called()
+                view.request.response.setStatus.assert_called_once_with(204)
