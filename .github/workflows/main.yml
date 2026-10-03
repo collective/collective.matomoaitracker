@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.11', '3.12', '3.13', '3.14']
+        python-version: ['3.11', '3.12', '3.13'] # , '3.14' fails on lxml not having a wheel for 3.14 yet
         plone-version: ['6.2-latest', '6.1-latest', '6.0-latest']
     with:
       python-version: ${{ matrix.python-version }}
