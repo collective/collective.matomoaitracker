@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s https://raw.githubusercontent.com/varnish/libvmod-curl/master/README.rst)",
+      "Bash(curl -s https://raw.githubusercontent.com/varnish/libvmod-curl/master/src/vmod_curl.vcc)",
+      "Bash(grep -E '^\\\\$\\(Function|Event\\)')",
+      "Bash(brew install *)",
+      "Bash(brew list *)",
+      "Bash(docker info *)",
+      "Bash(docker compose *)",
+      "Bash(curl -s \"https://hub.docker.com/v2/repositories/library/varnish/tags?page_size=30\")",
+      "Bash(python3 -c \"import json,sys;print\\([t['name'] for t in json.load\\(sys.stdin\\)['results']]\\)\")",
+      "Bash(curl -s \"https://hub.docker.com/v2/repositories/plone/plone-backend/tags?page_size=30\")"
+    ]
+  }
+}

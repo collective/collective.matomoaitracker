@@ -66,3 +66,13 @@ if site_id not in app.objectIds():
         "profile-collective.matomoaitracker:default"
     )
     transaction.commit()
+
+MATOMO_BASE_URL = os.getenv("MATOMO_BASE_URL")
+MATOMO_SITE_ID = os.getenv("MATOMO_SITE_ID")
+if MATOMO_BASE_URL or MATOMO_SITE_ID:
+    registry = app[site_id].portal_registry
+    if MATOMO_BASE_URL:
+        registry["matomoaitracker.matomo_base_url"] = MATOMO_BASE_URL
+    if MATOMO_SITE_ID:
+        registry["matomoaitracker.matomo_site_id"] = int(MATOMO_SITE_ID)
+    transaction.commit()

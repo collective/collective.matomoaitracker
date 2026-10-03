@@ -1,0 +1,1 @@
+Add a Docker stack for development: Varnish with `libvmod-curl` in front of Nginx doing the VirtualHostMonster rewrites to Plone. `make install` builds the images, `make stack-start` runs them. Matomo settings and `DELETE_EXISTING` can be set in a `.env` file, see `.env.example`.

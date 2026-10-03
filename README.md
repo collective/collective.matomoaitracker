@@ -63,7 +63,7 @@ make create-site
 -   [Git](https://6.docs.plone.org/install/create-project-cookieplone.html#git)
 -   [Docker](https://docs.docker.com/get-started/get-docker/) (optional)
 
-### Installation 🔧
+### Development Installation 🔧
 
 1.  Clone this repository, then change your working directory.
 
@@ -72,11 +72,42 @@ make create-site
     cd collective.matomoaitracker
     ```
 
-2.  Install this code base.
+2.  Install this code base. This also builds the Docker images for the full stack.
 
     ```shell
     make install
     ```
+
+### Docker stack 🐳
+
+The full stack runs in Docker: Varnish with `libvmod-curl` on port 10080, in front of
+Nginx on port 9080, which does the VirtualHostMonster rewrites to the Plone site
+`Plone`. On start the Plone site is created and the Matomo settings are applied.
+
+```shell
+make stack-start
+```
+
+Matomo is configured with `MATOMO_BASE_URL` (default `https://matomo.example.com`)
+and `MATOMO_SITE_ID` (default `1`):
+
+```shell
+MATOMO_BASE_URL=https://matomo.example.com MATOMO_SITE_ID=3 make stack-start
+```
+
+These settings can also be put in a `.env` file, see `.env.example`:
+
+```shell
+cp .env.example .env
+```
+
+Simulate an AI chatbot visit:
+
+```shell
+curl -A "ClaudeBot/1.0" http://localhost:10080/
+```
+
+Other targets: `make stack-logs`, `make stack-stop` and `make stack-remove-data`.
 
 
 ### Add features using `plonecli` or `bobtemplates.plone`

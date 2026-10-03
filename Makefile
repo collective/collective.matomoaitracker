@@ -76,7 +76,32 @@ instance/etc/zope.ini instance/etc/zope.conf: instance.yaml ## Create instance c
 config: instance/etc/zope.ini
 
 .PHONY: install
-install: $(VENV_FOLDER) config ## Install Plone and dependencies
+install: $(VENV_FOLDER) config stack-build ## Install Plone and dependencies, and build the Docker stack
+
+# Docker stack: Varnish (10080) -> Nginx VirtualHostMonster (9080) -> Plone
+.PHONY: stack-build
+stack-build: ## Build the Varnish, Nginx and Plone Docker images
+	@echo "$(GREEN)==> Build Docker stack$(RESET)"
+	@docker compose build
+
+.PHONY: stack-start
+stack-start: ## Start the Docker stack, Varnish on localhost:10080
+	@echo "$(GREEN)==> Start Docker stack$(RESET)"
+	@docker compose up -d
+
+.PHONY: stack-stop
+stack-stop: ## Stop the Docker stack
+	@echo "$(GREEN)==> Stop Docker stack$(RESET)"
+	@docker compose down
+
+.PHONY: stack-logs
+stack-logs: ## Follow the logs of the Docker stack
+	@docker compose logs -f
+
+.PHONY: stack-remove-data
+stack-remove-data: ## Stop the Docker stack and remove its Plone data
+	@echo "$(RED)==> Removing Docker stack data$(RESET)"
+	@docker compose down -v
 
 
 .PHONY: clean
