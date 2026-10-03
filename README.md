@@ -23,7 +23,18 @@ A addon for Plone which allow you to track requests from AI Chatbots to the serv
 
 ## Features
 
-TODO: List our awesome features
+After installing this addon in the Site Setting menu a new control panel "Matomo AI Tracker"
+is available to set the Matomo Site Id and Matomo Base URL.
+
+A view is available to track a url visited by an AI Chatbot.
+
+```
+    /@@matomoaitracker?url=https://www.example.com/deep/location/detail.html
+```
+
+This view is expected to be used from the Varnish caching server which runs in front of Plone
+backend. Varnish will check the User-Agent header and if it's one of the known AI providers
+it will use `curl` to call the backend and return the cached page.
 
 ## Installation
 
