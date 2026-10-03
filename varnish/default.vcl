@@ -8,7 +8,7 @@ import curl;
 
 backend nginx {
     .host = "nginx";
-    .port = "9080";
+    .port = "8002";
 }
 
 sub vcl_recv {

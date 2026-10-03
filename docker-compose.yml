@@ -1,4 +1,4 @@
-# Varnish (port 10080) -> Nginx VirtualHostMonster (port 9080) -> Plone (port 8080)
+# Varnish (port 8001) -> Nginx VirtualHostMonster (port 8002) -> Plone (port 8003)
 name: matomoaitracker
 
 services:
@@ -8,22 +8,24 @@ services:
       MATOMO_BASE_URL: ${MATOMO_BASE_URL:-https://matomo.example.com}
       MATOMO_SITE_ID: ${MATOMO_SITE_ID:-1}
       DELETE_EXISTING: ${DELETE_EXISTING:-False}
+    ports:
+      - "${PLONE_PORT:-8003}:8080"
     volumes:
       - plone-data:/data
 
   nginx:
     build: nginx
     ports:
-      - "9080:9080"
+      - "${NGINX_PORT:-8002}:8002"
     depends_on:
       - plone
 
   varnish:
     build: varnish
     environment:
-      MATOMO_AI_PLONE_ORIGIN: http://nginx:9080
+      MATOMO_AI_PLONE_ORIGIN: http://nginx:8002
     ports:
-      - "${VARNISH_PORT:-10080}:80"
+      - "${VARNISH_PORT:-8001}:80"
     depends_on:
       - nginx
 

@@ -80,8 +80,8 @@ make create-site
 
 ### Docker stack 🐳
 
-The full stack runs in Docker: Varnish with `libvmod-curl` on port 10080, in front of
-Nginx on port 9080, which does the VirtualHostMonster rewrites to the Plone site
+The full stack runs in Docker: Varnish with `libvmod-curl` on port 8001, in front of
+Nginx on port 8002, which does the VirtualHostMonster rewrites to the Plone site
 `Plone`. On start the Plone site is created and the Matomo settings are applied.
 
 ```shell
@@ -104,7 +104,14 @@ cp .env.example .env
 Simulate an AI chatbot visit:
 
 ```shell
-curl -A "ClaudeBot/1.0" http://localhost:10080/
+curl -A "ClaudeBot/1.0" http://localhost:8001/
+```
+
+Test the VCL against the running stack: it checks caching, the VirtualHostMonster
+links, and that every AI chatbot User-Agent is tracked and other requests are not:
+
+```shell
+make stack-test
 ```
 
 Other targets: `make stack-logs`, `make stack-stop` and `make stack-remove-data`.

@@ -78,14 +78,14 @@ config: instance/etc/zope.ini
 .PHONY: install
 install: $(VENV_FOLDER) config stack-build ## Install Plone and dependencies, and build the Docker stack
 
-# Docker stack: Varnish (10080) -> Nginx VirtualHostMonster (9080) -> Plone
+# Docker stack: Varnish (8001) -> Nginx VirtualHostMonster (8002) -> Plone (8003)
 .PHONY: stack-build
 stack-build: ## Build the Varnish, Nginx and Plone Docker images
 	@echo "$(GREEN)==> Build Docker stack$(RESET)"
 	@docker compose build
 
 .PHONY: stack-start
-stack-start: ## Start the Docker stack, Varnish on localhost:10080
+stack-start: ## Start the Docker stack, Varnish on localhost:8001
 	@echo "$(GREEN)==> Start Docker stack$(RESET)"
 	@docker compose up -d
 
@@ -93,6 +93,10 @@ stack-start: ## Start the Docker stack, Varnish on localhost:10080
 stack-stop: ## Stop the Docker stack
 	@echo "$(GREEN)==> Stop Docker stack$(RESET)"
 	@docker compose down
+
+.PHONY: stack-test
+stack-test: ## Test the Varnish VCL against the running Docker stack
+	@./scripts/test-vcl.sh
 
 .PHONY: stack-logs
 stack-logs: ## Follow the logs of the Docker stack
