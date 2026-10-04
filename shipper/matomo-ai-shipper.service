@@ -1,0 +1,27 @@
+# Ships the AI bot requests in /var/log/varnish/ai-bots.log to Plone.
+# Install matomo_ai_shipper.py as /usr/local/bin/matomo-ai-shipper, and put
+# the password of the Plone service user in /etc/matomo-ai-shipper/password.
+[Unit]
+Description=Ship AI bot requests to collective.matomoaitracker
+After=network-online.target matomo-ai-varnishncsa.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Can read the log varnishncsa writes.
+User=varnishlog
+Group=varnish
+StateDirectory=matomo-ai-shipper
+LoadCredential=password:/etc/matomo-ai-shipper/password
+# Call Plone directly, not through Varnish.
+Environment=MATOMO_AI_PLONE_URL=http://127.0.0.1:8080/Plone
+Environment=MATOMO_AI_USERNAME=matomo-ai-shipper
+Environment=MATOMO_AI_PASSWORD_FILE=%d/password
+Environment=MATOMO_AI_LOG_FILE=/var/log/varnish/ai-bots.log
+Environment=MATOMO_AI_STATE_FILE=/var/lib/matomo-ai-shipper/state.json
+ExecStart=/usr/bin/python3 /usr/local/bin/matomo-ai-shipper --verbose
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

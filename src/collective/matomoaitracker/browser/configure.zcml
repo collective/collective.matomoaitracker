@@ -19,9 +19,9 @@
 
   <browser:page
       name="matomoaitracker"
-      for="*"
+      for="Products.CMFCore.interfaces.ISiteRoot"
       class=".tracking.MatomoAIChatbotTrackingView"
-      permission="zope2.View"
+      permission="collective.matomoaitracker.SubmitTrackingEvents"
       />
 
 

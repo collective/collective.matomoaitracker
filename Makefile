@@ -79,8 +79,9 @@ config: instance/etc/zope.ini
 install: $(VENV_FOLDER) config stack-build ## Install Plone and dependencies, and build the Docker stack
 
 # Docker stack: Varnish (8001) -> Nginx VirtualHostMonster (8002) -> Plone (8003)
+# Tracking: varnishncsa -> shipper -> Plone -> Matomo (fake Matomo on 8004)
 .PHONY: stack-build
-stack-build: ## Build the Varnish, Nginx and Plone Docker images
+stack-build: ## Build the Docker images of the stack
 	@echo "$(GREEN)==> Build Docker stack$(RESET)"
 	@docker compose build
 
@@ -95,8 +96,16 @@ stack-stop: ## Stop the Docker stack
 	@docker compose down
 
 .PHONY: stack-test
-stack-test: ## Test the Varnish VCL against the running Docker stack
-	@./scripts/test-vcl.sh
+stack-test: $(VENV_FOLDER) ## Test AI bot tracking end to end against the running Docker stack
+	@$(BIN_FOLDER)/pytest --stack tests/stack -v
+
+.PHONY: varnish-test
+varnish-test: ## Test the VCL and varnishncsa format with varnishtest
+	@docker compose build -q varnish
+	@docker compose run --rm --no-deps -T \
+		-v $(BACKEND_FOLDER)/varnish:/work/varnish:ro \
+		-v $(BACKEND_FOLDER)/varnishncsa:/work/varnishncsa:ro \
+		varnish varnishtest /work/varnish/tests/matomoaitracker.vtc
 
 .PHONY: stack-logs
 stack-logs: ## Follow the logs of the Docker stack

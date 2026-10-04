@@ -4,7 +4,8 @@ vcl 4.1;
 # proxies to Plone.  See docker-compose.yml.
 
 import std;
-import curl;
+
+include "matomoaitracker.vcl";
 
 backend nginx {
     .host = "nginx";
@@ -16,8 +17,4 @@ sub vcl_recv {
     if (!req.http.X-Forwarded-Proto) {
         set req.http.X-Forwarded-Proto = "http";
     }
-}
-
-sub vcl_deliver {
-    include "varnish.vcl";
 }

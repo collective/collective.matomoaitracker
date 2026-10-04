@@ -1,0 +1,14 @@
+# The shipper finishes reading ai-bots.log.1 after a rotation, so that file
+# must stay uncompressed: keep delaycompress.  When the shipper is down for
+# longer than a rotation period, requests in older files are not shipped.
+/var/log/varnish/ai-bots.log {
+    daily
+    rotate 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    postrotate
+        systemctl reload matomo-ai-varnishncsa.service > /dev/null 2>&1 || true
+    endscript
+}

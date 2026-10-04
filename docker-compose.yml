@@ -1,12 +1,25 @@
-# Varnish (port 8001) -> Nginx VirtualHostMonster (port 8002) -> Plone (port 8003)
+# Requests:  Varnish (port 8001) -> Nginx VirtualHostMonster (port 8002) -> Plone (port 8003)
+# Tracking:  Varnish log -> varnishncsa -> ai-bots.log -> shipper -> Plone -> Matomo (port 8004)
+#
+# By default Plone tracks in a fake Matomo (matomo-fake/), which records the
+# tracking requests for `make stack-test`.
 name: matomoaitracker
+
+x-shipper-account: &shipper-account
+  MATOMO_AI_USERNAME: matomo-ai-shipper
+  MATOMO_AI_PASSWORD: ${MATOMO_AI_SHIPPER_PASSWORD:-shipper-secret}
 
 services:
   plone:
     build: .
     environment:
-      MATOMO_BASE_URL: ${MATOMO_BASE_URL:-https://matomo.example.com}
+      <<: *shipper-account
+      MATOMO_BASE_URL: ${MATOMO_BASE_URL:-http://matomo:8000}
       MATOMO_SITE_ID: ${MATOMO_SITE_ID:-1}
+      MATOMO_BOT_SITE_ID: ${MATOMO_BOT_SITE_ID:-2}
+      MATOMO_DIMENSION_CATEGORY: ${MATOMO_DIMENSION_CATEGORY:-1}
+      MATOMO_DIMENSION_CACHE: ${MATOMO_DIMENSION_CACHE:-2}
+      MATOMO_AI_TOKEN_AUTH: ${MATOMO_AI_TOKEN_AUTH:-test-token}
       DELETE_EXISTING: ${DELETE_EXISTING:-False}
     ports:
       - "${PLONE_PORT:-8003}:8080"
@@ -22,12 +35,51 @@ services:
 
   varnish:
     build: varnish
-    environment:
-      MATOMO_AI_PLONE_ORIGIN: http://nginx:8002
     ports:
       - "${VARNISH_PORT:-8001}:80"
+    volumes:
+      - varnish-workdir:/var/lib/varnish/varnishd
     depends_on:
       - nginx
 
+  varnishncsa:
+    build: varnishncsa
+    volumes:
+      - varnish-workdir:/var/lib/varnish/varnishd
+      - ai-bot-log:/var/log/varnish
+    depends_on:
+      - varnish
+
+  shipper:
+    build: shipper
+    # Send every second, so the stack tests do not wait long.
+    command: ["matomo-ai-shipper", "--verbose", "--flush-interval", "1"]
+    environment:
+      <<: *shipper-account
+      # Directly to Plone, not through Varnish.
+      MATOMO_AI_PLONE_URL: http://plone:8080/Plone
+      MATOMO_AI_LOG_FILE: /var/log/varnish/ai-bots.log
+    volumes:
+      - ai-bot-log:/var/log/varnish:ro
+      - shipper-state:/var/lib/matomo-ai-shipper
+    depends_on:
+      - varnishncsa
+      - plone
+
+  matomo:
+    build: matomo-fake
+    environment:
+      FAKE_MATOMO_TOKEN_AUTH: ${MATOMO_AI_TOKEN_AUTH:-test-token}
+    ports:
+      - "${MATOMO_PORT:-8004}:8000"
+
 volumes:
   plone-data:
+  # Varnish's shared memory log, read by varnishncsa.
+  varnish-workdir:
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: mode=1777
+  ai-bot-log:
+  shipper-state:

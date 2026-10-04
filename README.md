@@ -23,18 +23,23 @@ A addon for Plone which allow you to track requests from AI Chatbots to the serv
 
 ## Features
 
-After installing this addon in the Site Setting menu a new control panel "Matomo AI Tracker"
-is available to set the Matomo Site Id and Matomo Base URL.
+Tracks the requests of AI bots in Matomo, also when Varnish serves them from its
+cache, without slowing them down:
 
-A view is available to track a url visited by an AI Chatbot.
+- Varnish classifies AI bots by User-Agent as `user` (an AI assistant fetching a page
+  for a user, like Claude-User or ChatGPT-User), `search` (AI search crawlers) or
+  `training` (training data crawlers), and writes that to its log.
+- varnishncsa writes these requests to a log file, and a small shipper sends them in
+  batches to Plone. When Plone or Matomo is down, tracking is delayed, not lost.
+- Plone forwards them to Matomo's bulk tracking API, with the original time of the
+  request:
+  - `user` requests go to Matomo's **AI Chatbots** report (Matomo 5.8 or later).
+  - Optionally all AI bot requests go to a separate Matomo site as visits, with the
+    bot category and the Varnish cache status (hit, miss, pass) as custom dimensions.
 
-```
-    /@@matomoaitracker?url=https://www.example.com/deep/location/detail.html
-```
-
-This view is expected to be used from the Varnish caching server which runs in front of Plone
-backend. Varnish will check the User-Agent header and if it's one of the known AI providers
-it will use `curl` to call the backend and return the cached page.
+The control panel "Matomo AI Chatbot Tracking" has the Matomo settings. See
+[the add-on's README](src/collective/matomoaitracker/README.md) for setting up
+Varnish, varnishncsa and the shipper.
 
 ## Installation
 
@@ -80,39 +85,58 @@ make create-site
 
 ### Docker stack 🐳
 
-The full stack runs in Docker: Varnish with `libvmod-curl` on port 8001, in front of
-Nginx on port 8002, which does the VirtualHostMonster rewrites to the Plone site
-`Plone`. On start the Plone site is created and the Matomo settings are applied.
+The full stack runs in Docker:
+
+```text
+requests:  Varnish (8001) -> Nginx VirtualHostMonster (8002) -> Plone site "Plone" (8003)
+tracking:  Varnish log -> varnishncsa -> ai-bots.log -> shipper -> Plone -> Matomo (8004)
+```
+
+Varnish only classifies AI bots and writes the result to its log, it makes no HTTP
+calls. varnishncsa writes the AI bot requests to a log file, which the shipper sends
+in batches to Plone, and Plone forwards them to Matomo. By default that is a fake
+Matomo, which records what it receives for the tests.
 
 ```shell
 make stack-start
 ```
 
-Matomo is configured with `MATOMO_BASE_URL` (default `https://matomo.example.com`)
-and `MATOMO_SITE_ID` (default `1`):
-
-```shell
-MATOMO_BASE_URL=https://matomo.example.com MATOMO_SITE_ID=3 make stack-start
-```
-
-These settings can also be put in a `.env` file, see `.env.example`:
+On start the Plone site is created, the Matomo settings are applied and the service
+user for the shipper is created. Settings can be overridden with environment
+variables or in a `.env` file, see `.env.example`:
 
 ```shell
 cp .env.example .env
 ```
 
-Simulate an AI chatbot visit:
+Simulate an AI chatbot visit, and see what reached the fake Matomo a few seconds
+later:
 
 ```shell
-curl -A "ClaudeBot/1.0" http://localhost:8001/
+curl -A "Claude-User/1.0" http://localhost:8001/
+curl http://localhost:8004/_requests
 ```
 
-Test the VCL against the running stack: it checks caching, the VirtualHostMonster
-links, and that every AI chatbot User-Agent is tracked and other requests are not:
+Test the VCL and the varnishncsa format with `varnishtest`:
+
+```shell
+make varnish-test
+```
+
+Test the whole tracking chain against the running stack with the fake Matomo:
+every AI bot is tracked once in the right category, also from the cache, other
+requests are not, bots are not slowed down, and outages of Matomo or the shipper
+delay tracking without losing it. These are the pytest tests in `tests/stack`, which
+`make test` skips because they need the stack:
 
 ```shell
 make stack-test
 ```
+
+The tests run with Plone's caching policy, and again with pages cached in Varnish for
+60 seconds (`moderateCaching`), restoring the policy afterwards. They log in to Plone's
+REST API as `admin:admin` for that, set `PLONE_ADMIN=user:password` for other
+credentials.
 
 Other targets: `make stack-logs`, `make stack-stop` and `make stack-remove-data`.
 

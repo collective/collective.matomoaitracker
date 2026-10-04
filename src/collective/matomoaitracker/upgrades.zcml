@@ -1,0 +1,14 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
+    >
+
+  <genericsetup:upgradeDepends
+      title="Add AI bots site and dimension settings, and the Matomo AI Tracker role"
+      profile="collective.matomoaitracker:default"
+      source="1000"
+      destination="1001"
+      import_steps="plone.app.registry rolemap"
+      />
+
+</configure>

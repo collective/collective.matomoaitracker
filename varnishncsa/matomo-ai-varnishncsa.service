@@ -1,0 +1,23 @@
+# Logs every AI bot request Varnish delivers to /var/log/varnish/ai-bots.log,
+# for the shipper.  Install ai-bots.format as /etc/varnish/ai-bots.format and
+# matomo-ai.logrotate as /etc/logrotate.d/matomo-ai.
+[Unit]
+Description=Log AI bot requests for collective.matomoaitracker
+After=varnish.service
+PartOf=varnish.service
+
+[Service]
+Type=simple
+User=varnishlog
+Group=varnish
+ExecStart=/usr/bin/varnishncsa -c -j -a -t off \
+    -q "VCL_Log:ai-bot" \
+    -f /etc/varnish/ai-bots.format \
+    -w /var/log/varnish/ai-bots.log
+# Reopen the log file after logrotate renamed it.
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

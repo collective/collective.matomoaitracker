@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rolemap>
+  <roles>
+    <!-- Role for the service user of the shipper. -->
+    <role name="Matomo AI Tracker" />
+  </roles>
+  <permissions>
+    <permission acquire="True"
+                name="collective.matomoaitracker: Submit tracking events"
+    >
+      <role name="Manager" />
+      <role name="Site Administrator" />
+      <role name="Matomo AI Tracker" />
+    </permission>
+  </permissions>
+</rolemap>

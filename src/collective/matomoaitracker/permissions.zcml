@@ -1,0 +1,11 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+
+  <!-- Submit AI bot requests to the @@matomoaitracker view.  The view
+       accepts client IP and timestamp overrides, so only the shipper's
+       service user should have it. -->
+  <permission
+      id="collective.matomoaitracker.SubmitTrackingEvents"
+      title="collective.matomoaitracker: Submit tracking events"
+      />
+
+</configure>

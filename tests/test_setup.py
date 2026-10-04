@@ -16,9 +16,20 @@ class TestSetup:
 
         assert IBrowserLayer in browser_layers
 
+    def test_tracking_permission_roles(self, portal):
+        """Only managers and the shipper's role may submit tracking events."""
+        roles = {
+            role["name"]
+            for role in portal.rolesOfPermission(
+                "collective.matomoaitracker: Submit tracking events"
+            )
+            if role["selected"]
+        }
+        assert roles == {"Manager", "Site Administrator", "Matomo AI Tracker"}
+
     def test_latest_version(self, profile_last_version):
         """Test latest version of default profile."""
-        assert profile_last_version(f"{PACKAGE_NAME}:default") == "1000"
+        assert profile_last_version(f"{PACKAGE_NAME}:default") == "1001"
 
 
 class TestSetupUninstall:

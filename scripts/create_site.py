@@ -4,6 +4,7 @@ from Products.CMFPlone.factory import _DEFAULT_PROFILE
 from Products.CMFPlone.factory import addPloneSite
 from Products.GenericSetup.tool import SetupTool
 from Testing.makerequest import makerequest
+from zope.component.hooks import setSite
 from zope.interface import directlyProvidedBy
 from zope.interface import directlyProvides
 
@@ -67,12 +68,45 @@ if site_id not in app.objectIds():
     )
     transaction.commit()
 
-MATOMO_BASE_URL = os.getenv("MATOMO_BASE_URL")
-MATOMO_SITE_ID = os.getenv("MATOMO_SITE_ID")
-if MATOMO_BASE_URL or MATOMO_SITE_ID:
-    registry = app[site_id].portal_registry
-    if MATOMO_BASE_URL:
-        registry["matomoaitracker.matomo_base_url"] = MATOMO_BASE_URL
-    if MATOMO_SITE_ID:
-        registry["matomoaitracker.matomo_site_id"] = int(MATOMO_SITE_ID)
+site = app[site_id]
+# Import steps look up the registry of the active site.
+setSite(site)
+
+# Bring an existing site up to date with the add-on's profile.  The settings
+# and roles are imported again as well: that adds what is missing and keeps
+# existing values, also when the installed profile version is not recorded.
+site.portal_setup.upgradeProfile("collective.matomoaitracker:default")
+for step in ("plone.app.registry", "rolemap"):
+    site.portal_setup.runImportStepFromProfile(
+        "profile-collective.matomoaitracker:default", step, run_dependencies=False
+    )
+transaction.commit()
+
+SETTINGS = {
+    "MATOMO_BASE_URL": ("matomo_base_url", str),
+    "MATOMO_SITE_ID": ("matomo_site_id", int),
+    "MATOMO_BOT_SITE_ID": ("matomo_bot_site_id", int),
+    "MATOMO_DIMENSION_CATEGORY": ("matomo_dimension_category", int),
+    "MATOMO_DIMENSION_CACHE": ("matomo_dimension_cache", int),
+}
+registry = site.portal_registry
+for variable, (record, convert) in SETTINGS.items():
+    value = os.getenv(variable)
+    if value:
+        registry[f"matomoaitracker.{record}"] = convert(value)
+transaction.commit()
+
+# Service user for the shipper, see shipper/matomo_ai_shipper.py.
+SHIPPER_USERNAME = os.getenv("MATOMO_AI_USERNAME")
+SHIPPER_PASSWORD = os.getenv("MATOMO_AI_PASSWORD")
+if SHIPPER_USERNAME and SHIPPER_PASSWORD:
+    users = site.acl_users
+    if users.getUserById(SHIPPER_USERNAME) is None:
+        users.userFolderAddUser(
+            SHIPPER_USERNAME, SHIPPER_PASSWORD, ["Matomo AI Tracker"], []
+        )
+    else:
+        users.userFolderEditUser(
+            SHIPPER_USERNAME, SHIPPER_PASSWORD, ["Matomo AI Tracker"], []
+        )
     transaction.commit()

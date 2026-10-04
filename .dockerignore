@@ -19,3 +19,6 @@ constraints*.txt
 requirements*.txt
 .env
 .env.example
+shipper
+varnishncsa
+matomo-fake

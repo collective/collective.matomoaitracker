@@ -1,0 +1,71 @@
+varnishtest "collective.matomoaitracker: AI bot classification and varnishncsa format"
+
+# Run with `make varnish-test`.  ${testdir} is varnish/tests, the format file
+# is mounted next to it in varnishncsa/.
+
+server s1 -repeat 6 -keepalive {
+    rxreq
+    # The classification never reaches the backend.
+    expect req.http.X-AI-Bot == <undef>
+    txresp -hdr "Cache-Control: s-maxage=60" -body "page"
+} -start
+
+varnish v1 -arg "-p vcl_path=${testdir}/.." -vcl+backend {
+    import std;
+    include "matomoaitracker.vcl";
+} -start
+
+client c1 {
+    txreq -url "/user?q=1" -hdr "User-Agent: Mozilla/5.0 (compatible; Claude-User/1.0)"
+    rxresp
+    expect resp.status == 200
+    expect resp.http.Vary == <undef>
+
+    # The second request is a cache hit, and is logged as well.
+    txreq -url "/user?q=1" -hdr "User-Agent: Mozilla/5.0 (compatible; Claude-User/1.0)"
+    rxresp
+    expect resp.status == 200
+
+    txreq -url "/search" -hdr "User-Agent: claude-searchbot/1.0"
+    rxresp
+
+    txreq -url "/training" -hdr "User-Agent: GPTBot/1.1" -hdr "Referer: https://example.org/from"
+    rxresp
+
+    # A browser cannot make itself count as a bot.
+    txreq -url "/browser" -hdr "User-Agent: Mozilla/5.0 Firefox/140.0" -hdr "X-AI-Bot: user"
+    rxresp
+
+    # Values are JSON escaped.
+    txreq -url "/quote" -hdr {User-Agent: ClaudeBot "quoted"}
+    rxresp
+
+    # The search category wins from training for a name in both lists.
+    txreq -url "/both" -hdr "User-Agent: OAI-SearchBot GPTBot"
+    rxresp
+
+    # The tracking endpoint is not public.
+    txreq -url "/@@matomoaitracker" -hdr "User-Agent: GPTBot/1.1"
+    rxresp
+    expect resp.status == 404
+} -run
+
+shell {
+    set -e
+    varnishncsa -n ${v1_name} -d -q "VCL_Log:ai-bot" -j \
+        -f ${testdir}/../../varnishncsa/ai-bots.format > ${tmpdir}/ai-bots.log
+    cat ${tmpdir}/ai-bots.log
+
+    # Every bot request once, the browser not.
+    test "$(grep -c . ${tmpdir}/ai-bots.log)" -eq 7
+    ! grep -q '/browser' ${tmpdir}/ai-bots.log
+
+    grep -q '"url": "/user?q=1", "status": "200", .*"handling": "miss", "category": "user"' ${tmpdir}/ai-bots.log
+    grep -q '"url": "/user?q=1", "status": "200", .*"handling": "hit", "category": "user"' ${tmpdir}/ai-bots.log
+    grep -q '"url": "/search", .*"category": "search"' ${tmpdir}/ai-bots.log
+    grep -q '"url": "/training", .*"category": "training", "user_agent": "GPTBot/1.1", "referrer": "https://example.org/from"' ${tmpdir}/ai-bots.log
+    grep -q '"user_agent": "ClaudeBot \\"quoted\\""' ${tmpdir}/ai-bots.log
+    grep -q '"url": "/both", .*"category": "search"' ${tmpdir}/ai-bots.log
+    grep -q '"url": "/@@matomoaitracker", "status": "404"' ${tmpdir}/ai-bots.log
+    grep -qE '^."time": "[0-9]+", "client_ip": "127\.0\.0\.1", ' ${tmpdir}/ai-bots.log
+}
