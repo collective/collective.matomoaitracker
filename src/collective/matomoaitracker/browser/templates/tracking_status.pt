@@ -1,0 +1,79 @@
+<section class="card mb-4"
+         id="matomo-ai-tracking-status"
+         tal:define="
+           status view/status;
+         "
+         i18n:domain="collective.matomoaitracker"
+>
+  <div class="card-body">
+    <h2 class="card-title h5"
+        i18n:translate=""
+    >Tracking status</h2>
+    <p class="text-muted small"
+       i18n:translate=""
+    >
+      Batches of AI bot requests this Zope instance received from the shipper
+      since it started, at
+      <time class="pat-display-time"
+            datetime="${status/started}"
+            data-pat-display-time="output-format: L LT"
+            i18n:name="started"
+      >${status/started}</time>.
+    </p>
+    <dl class="row mb-0">
+      <dt class="col-sm-4"
+          i18n:translate=""
+      >Last batch</dt>
+      <dd class="col-sm-8"
+          tal:condition="status/last_batch"
+      >
+        <time class="pat-display-time"
+              datetime="${status/last_batch}"
+              title="${status/last_batch}"
+              data-pat-display-time="from-now: true"
+        >${status/last_batch}</time>
+      </dd>
+      <dd class="col-sm-8"
+          tal:condition="not:status/last_batch"
+          i18n:translate=""
+      >None yet: is the shipper running?</dd>
+      <dt class="col-sm-4"
+          i18n:translate=""
+      >Batches</dt>
+      <dd class="col-sm-8"
+          tal:content="status/batches"
+      ></dd>
+      <dt class="col-sm-4"
+          i18n:translate=""
+      >Tracking requests sent</dt>
+      <dd class="col-sm-8"
+          tal:content="status/tracked"
+      ></dd>
+      <dt class="col-sm-4"
+          i18n:translate=""
+      >Rejected by Matomo</dt>
+      <dd class="col-sm-8"
+          tal:content="status/rejected"
+      ></dd>
+      <dt class="col-sm-4"
+          i18n:translate=""
+      >Not tracked</dt>
+      <dd class="col-sm-8"
+          tal:content="status/skipped"
+      ></dd>
+      <tal:error condition="status/last_error">
+        <dt class="col-sm-4 text-danger"
+            i18n:translate=""
+        >Last error</dt>
+        <dd class="col-sm-8 text-danger">
+          <span tal:replace="status/last_error"></span>,
+          <time class="pat-display-time"
+                datetime="${status/last_error_time}"
+                title="${status/last_error_time}"
+                data-pat-display-time="from-now: true"
+          >${status/last_error_time}</time>
+        </dd>
+      </tal:error>
+    </dl>
+  </div>
+</section>

@@ -1,0 +1,1 @@
+Add the Gemini-Deep-Research and Google-NotebookLM AI assistants, skip the resources of pages (configurable as "Excluded URLs" in the control panel), track documents like PDFs as downloads based on their content type, and send `source=Varnish` with requests for the AI Chatbots report.

@@ -39,7 +39,19 @@ def stack():
             f"MATOMO_BASE_URL={FAKE_MATOMO} make stack-start",
             1,
         )
-    stack = Stack(*ports)
+    settings = {
+        name: compose("exec", "-T", "plone", "printenv", name, check=False)
+        for name in (
+            "MATOMO_SITE_ID",
+            "MATOMO_BOT_SITE_ID",
+            "MATOMO_DIMENSION_CATEGORY",
+            "MATOMO_DIMENSION_CACHE",
+            "MATOMO_DIMENSION_BOT",
+        )
+    }
+    if not all(settings.values()):
+        pytest.exit(f"The tests need all these settings of Plone: {settings}", 1)
+    stack = Stack(*ports, settings)
     status = stack.get(new_marker()).status
     if status != 200:
         pytest.exit(f"Varnish answered {status}, is Plone still starting?", 1)

@@ -16,11 +16,14 @@ services:
       <<: *shipper-account
       MATOMO_BASE_URL: ${MATOMO_BASE_URL:-http://matomo:8000}
       MATOMO_SITE_ID: ${MATOMO_SITE_ID:-1}
-      MATOMO_BOT_SITE_ID: ${MATOMO_BOT_SITE_ID:-2}
+      MATOMO_BOT_SITE_ID: ${MATOMO_BOT_SITE_ID:-1}
       MATOMO_DIMENSION_CATEGORY: ${MATOMO_DIMENSION_CATEGORY:-1}
       MATOMO_DIMENSION_CACHE: ${MATOMO_DIMENSION_CACHE:-2}
+      MATOMO_DIMENSION_BOT: ${MATOMO_DIMENSION_BOT:-3}
       MATOMO_AI_TOKEN_AUTH: ${MATOMO_AI_TOKEN_AUTH:-test-token}
       DELETE_EXISTING: ${DELETE_EXISTING:-False}
+      # Where Plone sends PURGE requests when content changes.
+      CACHING_PROXIES: http://varnish:80
     ports:
       - "${PLONE_PORT:-8003}:8080"
     volumes:

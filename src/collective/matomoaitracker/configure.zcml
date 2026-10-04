@@ -29,6 +29,11 @@
       />
 
   <utility
+      name="collective.matomoaitracker.BotCategories"
+      component=".interfaces.bot_categories"
+      />
+
+  <utility
       factory=".setuphandlers.HiddenProfiles"
       name="collective.matomoaitracker-hiddenprofiles"
       />

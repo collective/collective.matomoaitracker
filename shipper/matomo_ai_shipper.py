@@ -79,6 +79,7 @@ def to_event(line, default_scheme="http"):
         "bytes": to_int(data.get("bytes")),
         "duration_ms": round(duration_us / 1000) if duration_us is not None else None,
         "cache": data.get("handling") or None,
+        "content_type": data.get("content_type") or None,
     }
     return {key: value for key, value in event.items() if value is not None}
 
@@ -142,6 +143,7 @@ class LogReader:
         self.inode = os.fstat(self.file.fileno()).st_ino
         size = os.fstat(self.file.fileno()).st_size
         self.file.seek(offset if offset <= size else 0)
+        return self.file
 
     @staticmethod
     def inode_of(path):
@@ -159,21 +161,22 @@ class LogReader:
 
         Afterwards `inode` and `offset` point just after the last line.
         """
-        if self.file is None:
+        file = self.file
+        if file is None:
             if not self.path.exists():
                 return []
-            self.open_file(self.path, 0)
+            file = self.open_file(self.path, 0)
 
         # copytruncate: the file is shorter than where we are.
-        if os.fstat(self.file.fileno()).st_size < self.file.tell():
+        if os.fstat(file.fileno()).st_size < file.tell():
             logger.info("%s was truncated, reading it from the start", self.path)
-            self.file.seek(0)
+            file.seek(0)
 
-        lines = self.read_complete_lines(limit)
+        lines = self.read_complete_lines(file, limit)
         if lines or not self.rotated_away():
             return lines
         # Lines may have been written between reading and the rotation.
-        lines = self.read_complete_lines(limit)
+        lines = self.read_complete_lines(file, limit)
         if lines:
             return lines
         if self.path.exists():
@@ -182,16 +185,17 @@ class LogReader:
             self.rotated = False
         return []
 
-    def read_complete_lines(self, limit):
+    @staticmethod
+    def read_complete_lines(file, limit):
         lines = []
         while len(lines) < limit:
-            start = self.file.tell()
-            line = self.file.readline()
+            start = file.tell()
+            line = file.readline()
             if not line:
                 break
             if not line.endswith(b"\n"):
                 # varnishncsa is still writing this line.
-                self.file.seek(start)
+                file.seek(start)
                 break
             lines.append(line)
         return lines
@@ -260,7 +264,7 @@ class PloneClient:
 
 
 class NoRedirects(HTTPRedirectHandler):
-    def redirect_request(self, request, fp, code, message, headers, new_url):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
 
 
@@ -293,12 +297,13 @@ class Shipper:
         Returns the lines, and the inode and offset just after them.
         """
         lines = []
-        deadline = None
+        deadline = float("inf")
         while not self.stopping.is_set():
             new_lines = self.reader.read_lines(self.batch_size - len(lines))
             if new_lines:
+                if not lines:
+                    deadline = time.monotonic() + self.flush_interval
                 lines.extend(new_lines)
-                deadline = deadline or time.monotonic() + self.flush_interval
             if len(lines) >= self.batch_size:
                 break
             if lines and time.monotonic() >= deadline:
@@ -342,7 +347,9 @@ class Shipper:
 
 def main(argv=None):
     environ = os.environ
-    parser = ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser = ArgumentParser(
+        description="Ship AI bot requests from the varnishncsa log to Plone."
+    )
     parser.add_argument(
         "--log-file",
         default=environ.get("MATOMO_AI_LOG_FILE", "/var/log/varnish/ai-bots.log"),

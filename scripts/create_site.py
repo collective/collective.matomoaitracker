@@ -88,6 +88,7 @@ SETTINGS = {
     "MATOMO_BOT_SITE_ID": ("matomo_bot_site_id", int),
     "MATOMO_DIMENSION_CATEGORY": ("matomo_dimension_category", int),
     "MATOMO_DIMENSION_CACHE": ("matomo_dimension_cache", int),
+    "MATOMO_DIMENSION_BOT": ("matomo_dimension_bot", int),
 }
 registry = site.portal_registry
 for variable, (record, convert) in SETTINGS.items():
@@ -95,6 +96,14 @@ for variable, (record, convert) in SETTINGS.items():
     if value:
         registry[f"matomoaitracker.{record}"] = convert(value)
 transaction.commit()
+
+# Purge Varnish when content changes, see varnish/default.vcl.
+CACHING_PROXIES = os.getenv("CACHING_PROXIES")
+if CACHING_PROXIES:
+    prefix = "plone.cachepurging.interfaces.ICachePurgingSettings"
+    registry[f"{prefix}.enabled"] = True
+    registry[f"{prefix}.cachingProxies"] = tuple(CACHING_PROXIES.split())
+    transaction.commit()
 
 # Service user for the shipper, see shipper/matomo_ai_shipper.py.
 SHIPPER_USERNAME = os.getenv("MATOMO_AI_USERNAME")

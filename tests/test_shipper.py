@@ -24,6 +24,7 @@ def log_line(url="/page", **overrides):
         "url": url,
         "status": "200",
         "bytes": "1234",
+        "content_type": "application/pdf",
         "duration_us": "12345",
         "handling": "hit",
         "category": "user",
@@ -45,21 +46,31 @@ class TestToEvent:
             "bytes": 1234,
             "duration_ms": 12,
             "cache": "hit",
+            "content_type": "application/pdf",
         }
 
     def test_missing_headers(self):
         event = to_event(
-            log_line(forwarded_for="", proto="", bytes="-", referrer="https://a.b/")
+            log_line(
+                forwarded_for="",
+                proto="",
+                bytes="-",
+                content_type="",
+                referrer="https://a.b/",
+            )
         )
 
+        assert event is not None
         assert event["url"] == "http://www.example.org/page"
         assert event["ip"] == "10.0.0.2"
         assert event["referrer"] == "https://a.b/"
         assert "bytes" not in event
+        assert "content_type" not in event
 
     def test_default_scheme(self):
         event = to_event(log_line(proto=""), default_scheme="https")
 
+        assert event is not None
         assert event["url"].startswith("https://")
 
     @pytest.mark.parametrize(
@@ -193,7 +204,7 @@ class FakePlone:
                 self.end_headers()
                 self.wfile.write(data)
 
-            def log_message(self, *args):
+            def log_message(self, format, *args):  # noqa: A002 - as in the base class
                 pass
 
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)

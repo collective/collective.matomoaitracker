@@ -1,9 +1,13 @@
 """Varnish in front of Nginx and Plone."""
 
 from .helpers import BROWSER
+from .helpers import fetch
 from .helpers import new_marker
 
+import json
+import pytest
 import re
+import time
 
 
 # Ports blocked by Chrome and Firefox, see net/base/port_util.cc in Chromium.
@@ -38,10 +42,7 @@ def test_second_request_is_a_cache_hit(stack, caching_policy):
     marker = new_marker()
 
     stack.get(marker)
-    x_varnish = stack.get(marker).headers["X-Varnish"]
-
-    # A hit shows the transaction ids of the request and of the cached object.
-    assert re.fullmatch(r"\d+ \d+", x_varnish)
+    assert is_hit(stack.get(marker))
 
 
 def test_bots_are_as_fast_as_browsers(stack, caching_policy):
@@ -57,3 +58,67 @@ def test_bots_are_as_fast_as_browsers(stack, caching_policy):
 
     # Generous margins: without caching every request renders a Plone page.
     assert bot <= browser * 1.25 + 0.005, f"{bot:.4f}s vs {browser:.4f}s per request"
+
+
+def is_hit(response):
+    """A hit shows the transaction ids of the request and of the cached object."""
+    return re.fullmatch(r"\d+ \d+", response.headers["X-Varnish"]) is not None
+
+
+def test_purge_clears_the_cache(stack, caching_policy):
+    caching_policy.require_caching()
+    marker = new_marker()
+    stack.get(marker)
+    assert is_hit(stack.get(marker))
+
+    # The tests run on the Docker host, which is in a private network.
+    purged = fetch(f"{stack.varnish_url}/?marker={marker}", method="PURGE")
+
+    assert purged.status == 200
+    assert not is_hit(stack.get(marker))
+
+
+@pytest.fixture
+def page(stack):
+    """A published news item, created and removed through Varnish as admin.
+
+    By default plone.app.caching purges File, Image and News Item, not pages.
+    """
+    page_id = new_marker()
+    headers = {"Accept": "application/json", "Content-Type": "application/json"}
+
+    def call(method, path="", payload=None):
+        return fetch(
+            f"{stack.varnish_url}{path}",
+            method=method,
+            data=json.dumps(payload).encode() if payload is not None else None,
+            headers=headers,
+            auth=stack.admin,
+        )
+
+    created = call(
+        "POST", payload={"@type": "News Item", "id": page_id, "title": "Old"}
+    )
+    assert created.status == 201, f"Creating the page: {created.status}"
+    assert call("POST", f"/{page_id}/@workflow/publish").status == 200
+    yield f"/{page_id}", call
+    call("DELETE", f"/{page_id}")
+
+
+def test_plone_purges_changed_content(stack, caching_policy, page):
+    """Editing content makes Plone purge it from Varnish (plone.cachepurging)."""
+    caching_policy.require_caching()
+    path, call = page
+    url = f"{stack.varnish_url}{path}"
+    fetch(url)
+    assert is_hit(fetch(url))
+
+    # Through Varnish, like an editor: Plone purges the public paths.
+    assert call("PATCH", path, {"title": "New title"}).status == 204
+
+    # Plone purges in a background thread.
+    deadline = time.monotonic() + 10
+    while is_hit(response := fetch(url)) and time.monotonic() < deadline:
+        time.sleep(0.5)
+    assert not is_hit(response)
+    assert "New title" in response.body

@@ -10,8 +10,12 @@ A Plone addon for server-side tracking of AI chatbot requests in Matomo.
 - Adds no work to the request path: Varnish only writes the bot category to its log.
 - Sends AI assistants (Claude-User, ChatGPT-User, ...) to Matomo's AI Chatbots report.
 - Optionally tracks every AI bot request, including search and training crawlers, as a
-  visit in a separate Matomo site, with the bot category and the cache status as
-  custom dimensions.
+  visit in a separate Matomo site, with the bot category, the cache status and the bot
+  name as custom dimensions. Matomo's AI Assistants reports leave crawlers out; this
+  site shows which crawlers cause load peaks, and how much of it reached Plone.
+- Only tracks pages and documents, not the images, styles and scripts of pages: the
+  excluded URLs can be changed in the control panel.
+- Tracks documents, like PDFs, as downloads.
 - Delays tracking during a Plone or Matomo outage instead of losing it.
 
 ## Installation 🔧
@@ -39,8 +43,8 @@ Matomo <── bulk tracking API ── Plone @@matomoaitracker <── shipper 
    `std.log("ai-bot:<category>")`. A log record cannot be faked by clients, unlike a
    request header.
 2. varnishncsa writes every logged AI bot request as a JSON line, with time, client IP,
-   URL, status, size, duration, cache status (`Varnish:handling`), User-Agent and
-   referrer ([`varnishncsa/ai-bots.format`](../../../varnishncsa/ai-bots.format)).
+   URL, status, size, content type, duration, cache status (`Varnish:handling`),
+   User-Agent and referrer ([`varnishncsa/ai-bots.format`](../../../varnishncsa/ai-bots.format)).
 3. The shipper ([`shipper/matomo_ai_shipper.py`](../../../shipper/matomo_ai_shipper.py),
    standard library only) follows that file and POSTs batches to `@@matomoaitracker`.
    It keeps its position in a small state file and only moves forward once Plone
@@ -48,26 +52,53 @@ Matomo <── bulk tracking API ── Plone @@matomoaitracker <── shipper 
    shipper stops between sending and saving its position.
 4. `@@matomoaitracker` checks the requests against the bot list in
    [`bots.py`](bots.py) and forwards them to Matomo's bulk tracking API, with `cdt` set
-   to the time of the request:
-   - `user`: to the Matomo site, as bot request (`recMode=1`), shown in the AI Chatbots
-     report with status, size and duration. Matomo only stores AI assistants there.
+   to the time of the request. Requests for excluded URLs are skipped, and responses
+   with a document content type (not a page, like `application/pdf`) are sent as
+   downloads:
+   - `user`: to the Matomo site, as bot request (`recMode=1`, `source=Varnish`), shown in
+     the AI Chatbots report with status, size and duration. Matomo only stores AI
+     assistants there.
    - every category, when an AI bots site is configured: as a visit (`bots=1`) with the
-     client IP, referrer, and the custom dimensions.
+     client IP, referrer, duration (Matomo's Performance report), and the custom
+     dimensions.
 
 ## Configuration 🔧
 
 In the **Matomo AI Chatbot Tracking** control panel:
 
+- **Track AI bots**: switch tracking off and on. While it is off, AI bot requests are
+  dropped, not tracked later.
 - **Matomo Base URL** and **Matomo Site ID**.
 - **Matomo AI bots Site ID** (optional): a separate site for all AI bot requests. Use a
   separate site, as these visits would otherwise mix with human visitors.
-- **Bot category dimension ID** and **Cache status dimension ID** (optional): custom
-  dimensions of the AI bots site, create them in Matomo first.
+- **Categories tracked in the AI bots site**: AI assistants, search crawlers and
+  training crawlers, all by default.
+- **Bot category dimension ID**, **Cache status dimension ID** and **Bot name dimension
+  ID** (optional): custom dimensions of the AI bots site, create them in Matomo first.
+  Action scope works best: a crawler's requests are grouped in a few long visits.
 
-The Matomo `token_auth` is read from the `MATOMO_AI_TOKEN_AUTH` environment variable
-of Plone, so it is not stored in the database. Matomo needs it for the original
-request time and the client IP. Use the token of a user with write access to the
-sites.
+To see crawler load in the AI bots site, use the actions (page views) per hour rather
+than the visits, broken down by the bot name and cache status dimensions: misses and
+passes are the requests that reached Plone.
+- **Excluded URLs**: regular expressions for URL paths that are not tracked. By default
+  Plone's resources (`++resource++`, `++plone++`, `++theme++`, `@@images`) and files like
+  styles, scripts, images and fonts.
+
+**Test connection** checks the saved settings against Matomo: whether the sites exist
+for the token, and whether the custom dimensions exist and are active.
+
+Above the settings, **Tracking status** shows when the shipper last delivered a batch,
+how many tracking requests were sent, rejected by Matomo or not tracked, and the last
+error. It is kept in memory: it counts what the Zope instance showing the control panel
+handled since it started.
+
+**Matomo token**: create an auth token in Matomo under *Personal* > *Security* for a
+user with write access to the sites, and paste it. Matomo needs it for the original
+request time and the client IP. The token is never shown again, not even in the page
+source: leave the field empty to keep it, or use **Remove token**. It is stored in the
+Plone registry, which only Managers and Site Administrators can read. To keep it out
+of the database, set the `MATOMO_AI_TOKEN_AUTH` environment variable of Plone instead:
+it overrides the stored token.
 
 Submitting requests to `@@matomoaitracker` needs the permission
 `collective.matomoaitracker: Submit tracking events`. Create a user for the shipper with

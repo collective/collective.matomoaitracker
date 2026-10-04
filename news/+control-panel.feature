@@ -1,0 +1,1 @@
+Give site administrators more control in the control panel: switch AI bot tracking off, choose which bot categories are tracked in the AI bots site, check the settings against Matomo with "Test connection", and see when the shipper last delivered, how many requests were tracked, and the last error.

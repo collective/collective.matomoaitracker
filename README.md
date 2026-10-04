@@ -32,10 +32,11 @@ cache, without slowing them down:
 - varnishncsa writes these requests to a log file, and a small shipper sends them in
   batches to Plone. When Plone or Matomo is down, tracking is delayed, not lost.
 - Plone forwards them to Matomo's bulk tracking API, with the original time of the
-  request:
+  request. Requests for the resources of pages, like images, styles and scripts, are
+  skipped, and documents like PDFs are tracked as downloads:
   - `user` requests go to Matomo's **AI Chatbots** report (Matomo 5.8 or later).
   - Optionally all AI bot requests go to a separate Matomo site as visits, with the
-    bot category and the Varnish cache status (hit, miss, pass) as custom dimensions.
+    bot category, bot name and the Varnish cache status (hit, miss, pass) as custom dimensions.
 
 The control panel "Matomo AI Chatbot Tracking" has the Matomo settings. See
 [the add-on's README](src/collective/matomoaitracker/README.md) for setting up
@@ -54,6 +55,10 @@ And to create the Plone site:
 ```shell
 make create-site
 ```
+
+This Addon expects you to run a varnish, varnishnsca and shipper Docker image.
+Examples can be found in the subfolder for each service.
+
 
 ## Contribute
 
@@ -92,8 +97,10 @@ requests:  Varnish (8001) -> Nginx VirtualHostMonster (8002) -> Plone site "Plon
 tracking:  Varnish log -> varnishncsa -> ai-bots.log -> shipper -> Plone -> Matomo (8004)
 ```
 
-Varnish only classifies AI bots and writes the result to its log, it makes no HTTP
-calls. varnishncsa writes the AI bot requests to a log file, which the shipper sends
+Varnish's configuration (`varnish/default.vcl`) is based on the one of Plone's
+cookieplone project templates, tuned for plone.app.caching: Plone purges changed
+content from Varnish, logged-in users are not cached. For the tracking, Varnish only
+classifies AI bots and writes the result to its log, it makes no HTTP calls. varnishncsa writes the AI bot requests to a log file, which the shipper sends
 in batches to Plone, and Plone forwards them to Matomo. By default that is a fake
 Matomo, which records what it receives for the tests.
 

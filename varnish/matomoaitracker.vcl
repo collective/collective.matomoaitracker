@@ -16,7 +16,7 @@ sub vcl_recv {
     # Never trust a classification sent by the client.
     unset req.http.X-AI-Bot;
 
-    if (req.http.User-Agent ~ "(?i)(Claude-User|ChatGPT-User|Perplexity-User|MistralAI-User)") {
+    if (req.http.User-Agent ~ "(?i)(Claude-User|ChatGPT-User|Perplexity-User|MistralAI-User|Gemini-Deep-Research|Google-NotebookLM|Google-GeminiNotebook)") {
         set req.http.X-AI-Bot = "user";
     } elsif (req.http.User-Agent ~ "(?i)(Claude-SearchBot|OAI-SearchBot|PerplexityBot|YouBot)") {
         set req.http.X-AI-Bot = "search";

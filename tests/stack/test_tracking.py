@@ -1,11 +1,10 @@
 """AI bot requests arrive in Matomo once, in the right category."""
 
 from .helpers import BROWSER
-from .helpers import expected
 from .helpers import new_marker
-from .helpers import summary
 from collective.matomoaitracker.bots import BOTS
 
+import base64
 import pytest
 import time
 
@@ -32,11 +31,13 @@ def bot_requests(stack, caching_policy):
 
 @pytest.mark.parametrize("bot,category", ALL_BOTS)
 def test_bot_is_tracked(stack, bot_requests, bot, category):
-    tracked = stack.wait_tracked(bot_requests[bot], len(expected(category)))
+    tracked = stack.wait_tracked(bot_requests[bot], len(stack.expected(category)))
 
-    assert summary(tracked) == expected(category)
+    assert stack.summary(tracked) == stack.expected(category)
     for request in tracked:
         assert request["ua"] == f"Mozilla/5.0 (compatible; {bot}/1.0)"
+    [visit] = [request for request in tracked if request.get("bots") == "1"]
+    assert stack.bot_name(visit) == bot
 
 
 def test_user_agent_match_is_case_insensitive(stack, caching_policy):
@@ -44,7 +45,7 @@ def test_user_agent_match_is_case_insensitive(stack, caching_policy):
 
     stack.get(marker, user_agent="Mozilla/5.0 (compatible; claudebot/1.0)")
 
-    assert summary(stack.wait_tracked(marker, 1)) == expected("training")
+    assert stack.summary(stack.wait_tracked(marker, 1)) == stack.expected("training")
 
 
 def test_cache_hits_are_tracked(stack, caching_policy):
@@ -54,8 +55,8 @@ def test_cache_hits_are_tracked(stack, caching_policy):
     stack.get(marker, user_agent="ClaudeBot/1.0")
     stack.get(marker, user_agent="ClaudeBot/1.0")
 
-    assert summary(stack.wait_tracked(marker, 2)) == sorted(
-        expected("training", "miss") + expected("training", "hit")
+    assert stack.summary(stack.wait_tracked(marker, 2)) == sorted(
+        stack.expected("training", "miss") + stack.expected("training", "hit")
     )
 
 
@@ -93,6 +94,68 @@ def test_not_tracked(stack, caching_policy, user_agent, headers):
     sent_after = new_marker()
 
     stack.get(marker, user_agent=user_agent, headers=headers)
+    # Once a bot request sent afterwards arrived, this one would have too.
+    stack.get(sent_after, user_agent="GPTBot/1.1")
+
+    assert stack.wait_tracked(sent_after, 1)
+    assert stack.tracked(marker) == []
+
+
+@pytest.fixture(scope="module")
+def pdf_file(stack):
+    """A PDF file in the Plone site, removed afterwards."""
+    name = f"{new_marker()}.pdf"
+    response = stack.plone_api(
+        "POST",
+        payload={
+            "@type": "File",
+            "id": name,
+            "title": "Test PDF",
+            "file": {
+                "data": base64.b64encode(b"%PDF-1.4 test").decode(),
+                "encoding": "base64",
+                "filename": name,
+                "content-type": "application/pdf",
+            },
+        },
+    )
+    assert response.status == 201, f"Creating the PDF: {response.status}"
+    yield f"/{name}/@@download/file"
+    stack.plone_api("DELETE", f"/{name}")
+
+
+def test_documents_are_tracked_as_downloads(stack, caching_policy, pdf_file):
+    marker = new_marker()
+
+    response = stack.get(marker, path=pdf_file, user_agent="Claude-User/1.0")
+    assert response.headers["Content-Type"] == "application/pdf"
+
+    tracked = stack.wait_tracked(marker, 2)
+    assert stack.summary(tracked) == stack.expected("user")
+    url = f"{stack.varnish_url}{pdf_file}?marker={marker}"
+    for request in tracked:
+        assert request["download"] == url
+    [chatbot] = [request for request in tracked if request.get("recMode") == "1"]
+    assert chatbot["source"] == "Varnish"
+
+
+def test_pages_are_not_downloads(stack, caching_policy):
+    marker = new_marker()
+
+    stack.get(marker, user_agent="GPTBot/1.1")
+
+    [request] = stack.wait_tracked(marker, 1)
+    assert "download" not in request
+
+
+@pytest.mark.parametrize(
+    "path", ["/++plone++static/plone.css", "/logo.png/@@images/image/thumb"]
+)
+def test_resources_of_pages_are_not_tracked(stack, caching_policy, path):
+    marker = new_marker()
+    sent_after = new_marker()
+
+    stack.get(marker, path=path, user_agent="GPTBot/1.1")
     # Once a bot request sent afterwards arrived, this one would have too.
     stack.get(sent_after, user_agent="GPTBot/1.1")
 

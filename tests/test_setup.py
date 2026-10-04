@@ -46,3 +46,13 @@ class TestSetupUninstall:
         from collective.matomoaitracker.interfaces import IBrowserLayer
 
         assert IBrowserLayer not in browser_layers
+
+
+class TestExcludedUrlsSetting:
+    def test_invalid_patterns_are_refused(self):
+        from collective.matomoaitracker.interfaces import valid_pattern
+        from zope.interface import Invalid
+
+        assert valid_pattern(r"\.css$")
+        with pytest.raises(Invalid):
+            valid_pattern("[invalid")

@@ -1,9 +1,7 @@
 """Outages of Matomo or the shipper delay tracking, they do not lose it."""
 
 from .helpers import compose
-from .helpers import expected
 from .helpers import new_marker
-from .helpers import summary
 
 import pytest
 import time
@@ -33,7 +31,9 @@ def test_matomo_down(stack, stopped):
     compose("start", "matomo")
 
     # The shipper backs off while Matomo is down, up to 5 minutes.
-    assert summary(stack.wait_tracked(marker, 1, timeout=60)) == expected("training")
+    assert stack.summary(stack.wait_tracked(marker, 1, timeout=60)) == stack.expected(
+        "training"
+    )
 
 
 def test_shipper_restart(stack, stopped):
@@ -43,7 +43,7 @@ def test_shipper_restart(stack, stopped):
     stack.get(marker, user_agent="Claude-User/1.0")
     compose("start", "shipper")
 
-    assert summary(stack.wait_tracked(marker, 2)) == expected("user")
+    assert stack.summary(stack.wait_tracked(marker, 2)) == stack.expected("user")
     # Nothing is shipped twice after the restart.
     time.sleep(3)
     assert len(stack.tracked(marker)) == 2

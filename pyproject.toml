@@ -30,7 +30,7 @@ classifiers = [
 dependencies = [
     "Products.CMFPlone",
     "plone.api",
-    
+    "requests",
     "z3c.jbot",
 ]
 
@@ -663,6 +663,15 @@ preview = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# Pyright, and Pylance in VS Code: `uvx pyright` checks the same files.
+[tool.pyright]
+include = ["src", "tests", "shipper", "matomo-fake", "scripts", "conftest.py"]
+exclude = ["**/__pycache__", ".venv", "instance", "sources"]
+venvPath = "."
+venv = ".venv"
+# The tests import their helpers (fake_matomo) from the tests folder.
+extraPaths = ["tests"]
 
 [tool.coverage.run]
 source_pkgs = ["collective.matomoaitracker", "tests"]

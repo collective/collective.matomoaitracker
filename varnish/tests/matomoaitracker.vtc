@@ -7,7 +7,7 @@ server s1 -repeat 6 -keepalive {
     rxreq
     # The classification never reaches the backend.
     expect req.http.X-AI-Bot == <undef>
-    txresp -hdr "Cache-Control: s-maxage=60" -body "page"
+    txresp -hdr "Cache-Control: s-maxage=60" -hdr "Content-Type: text/html; charset=utf-8" -body "page"
 } -start
 
 varnish v1 -arg "-p vcl_path=${testdir}/.." -vcl+backend {
@@ -63,6 +63,7 @@ shell {
     grep -q '"url": "/user?q=1", "status": "200", .*"handling": "miss", "category": "user"' ${tmpdir}/ai-bots.log
     grep -q '"url": "/user?q=1", "status": "200", .*"handling": "hit", "category": "user"' ${tmpdir}/ai-bots.log
     grep -q '"url": "/search", .*"category": "search"' ${tmpdir}/ai-bots.log
+    grep -q '"url": "/search", .*"content_type": "text/html; charset=utf-8"' ${tmpdir}/ai-bots.log
     grep -q '"url": "/training", .*"category": "training", "user_agent": "GPTBot/1.1", "referrer": "https://example.org/from"' ${tmpdir}/ai-bots.log
     grep -q '"user_agent": "ClaudeBot \\"quoted\\""' ${tmpdir}/ai-bots.log
     grep -q '"url": "/both", .*"category": "search"' ${tmpdir}/ai-bots.log

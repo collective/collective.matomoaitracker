@@ -1,4 +1,5 @@
 from collective.matomoaitracker import PACKAGE_NAME
+from collective.matomoaitracker.interfaces import DEFAULT_EXCLUDED_URLS
 from plone import api
 from plone.registry.interfaces import IRegistry
 from zope.component import getUtility
@@ -9,6 +10,11 @@ NEW_RECORDS = (
     "matomoaitracker.matomo_bot_site_id",
     "matomoaitracker.matomo_dimension_category",
     "matomoaitracker.matomo_dimension_cache",
+    "matomoaitracker.matomo_excluded_urls",
+    "matomoaitracker.matomo_tracking_enabled",
+    "matomoaitracker.matomo_bot_site_categories",
+    "matomoaitracker.matomo_token_auth",
+    "matomoaitracker.matomo_dimension_bot",
 )
 
 
@@ -30,6 +36,13 @@ def test_upgrade_1000_to_1001(portal):
     for name in NEW_RECORDS:
         assert name in registry.records
     assert api.portal.get_registry_record("matomoaitracker.matomo_site_id") == 7
+    assert api.portal.get_registry_record("matomoaitracker.matomo_excluded_urls") == (
+        DEFAULT_EXCLUDED_URLS
+    )
+    assert api.portal.get_registry_record("matomoaitracker.matomo_tracking_enabled")
+    assert api.portal.get_registry_record(
+        "matomoaitracker.matomo_bot_site_categories"
+    ) == ["user", "search", "training"]
     assert "Matomo AI Tracker" in {
         role["name"]
         for role in portal.rolesOfPermission(

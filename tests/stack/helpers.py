@@ -53,7 +53,7 @@ class Response:
 
 
 class NoRedirects(HTTPRedirectHandler):
-    def redirect_request(self, *args):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
 
 
@@ -84,7 +84,10 @@ def new_marker():
 
 
 class Stack:
-    def __init__(self, varnish_port, plone_port, matomo_port):
+    def __init__(self, varnish_port, plone_port, matomo_port, settings):
+        # Matomo settings of Plone, from its environment: MATOMO_SITE_ID,
+        # MATOMO_BOT_SITE_ID and MATOMO_DIMENSION_CATEGORY, _CACHE and _BOT.
+        self.settings = settings
         self.varnish_port = varnish_port
         self.varnish_url = f"http://localhost:{varnish_port}"
         self.plone_site_url = f"http://localhost:{plone_port}/Plone"
@@ -117,6 +120,46 @@ class Stack:
                 return tracked
             time.sleep(0.5)
 
+    def plone_api(self, method, path="", payload=None):
+        """Call Plone's REST API as admin, return the response."""
+        return fetch(
+            f"{self.plone_site_url}{path}",
+            method=method,
+            data=json.dumps(payload).encode() if payload is not None else None,
+            headers={"Accept": "application/json", "Content-Type": "application/json"},
+            auth=self.admin,
+        )
+
+    def summary(self, tracked):
+        """Tracking requests as sorted (idsite, mode, category, cache) tuples.
+
+        mode is "chatbot" for Matomo's AI Chatbots report (recMode=1), and
+        "visit" for the AI bots site (bots=1).
+        """
+        category = f"dimension{self.settings['MATOMO_DIMENSION_CATEGORY']}"
+        cache = f"dimension{self.settings['MATOMO_DIMENSION_CACHE']}"
+        return sorted(
+            (
+                int(request["idsite"]),
+                "chatbot" if request.get("recMode") == "1" else "visit",
+                request.get(category) if request.get("bots") == "1" else None,
+                request.get(cache) if request.get("bots") == "1" else None,
+            )
+            for request in tracked
+        )
+
+    def expected(self, category, cache="miss"):
+        """The tracking requests for one request of a bot in a category."""
+        visit = (int(self.settings["MATOMO_BOT_SITE_ID"]), "visit", category, cache)
+        if category == "user":
+            chatbot = (int(self.settings["MATOMO_SITE_ID"]), "chatbot", None, None)
+            return sorted([chatbot, visit])
+        return [visit]
+
+    def bot_name(self, request):
+        """The bot name dimension of a tracking request."""
+        return request.get(f"dimension{self.settings['MATOMO_DIMENSION_BOT']}")
+
     def registry_get(self, name):
         response = fetch(
             f"{self.plone_site_url}/@registry/{name}",
@@ -135,28 +178,3 @@ class Stack:
             auth=self.admin,
         )
         assert response.status == 204, f"Changing the registry: {response.status}"
-
-
-def summary(tracked):
-    """Tracking requests as sorted (idsite, mode, category, cache) tuples.
-
-    mode is "chatbot" for Matomo's AI Chatbots report (recMode=1), and
-    "visit" for the AI bots site (bots=1).
-    """
-    return sorted(
-        (
-            int(request["idsite"]),
-            "chatbot" if request.get("recMode") == "1" else "visit",
-            request.get("dimension1"),
-            request.get("dimension2"),
-        )
-        for request in tracked
-    )
-
-
-def expected(category, cache="miss"):
-    """The tracking requests for one request of a bot in a category."""
-    visit = (2, "visit", category, cache)
-    if category == "user":
-        return [(1, "chatbot", None, None), visit]
-    return [visit]

@@ -19,6 +19,10 @@ BOTS = {
         "ChatGPT-User",
         "Perplexity-User",
         "MistralAI-User",
+        "Gemini-Deep-Research",
+        "Google-NotebookLM",
+        # Former name of Google-NotebookLM.
+        "Google-GeminiNotebook",
     ),
     SEARCH: (
         "Claude-SearchBot",
