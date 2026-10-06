@@ -67,7 +67,10 @@ Matomo <── bulk tracking API ── Plone @@matomoaitracker <── shipper 
 In the **Matomo AI Chatbot Tracking** control panel:
 
 - **Track AI bots**: switch tracking off and on. While it is off, AI bot requests are
-  dropped, not tracked later.
+  dropped, not tracked later. The `MATOMO_AI_TRACKING_ENABLED` environment variable of
+  Plone overrides it (`true` or `false`, any other value is `false`), and the control
+  panel then shows it read-only. Use it when a production database is copied to test
+  environments that should not track.
 - **Matomo Base URL** and **Matomo Site ID**.
 - **Matomo AI bots Site ID** (optional): a separate site for all AI bot requests. Use a
   separate site, as these visits would otherwise mix with human visitors.

@@ -2,6 +2,7 @@ from collective.matomoaitracker import _
 from collective.matomoaitracker.browser.tracking import load_settings
 from collective.matomoaitracker.browser.tracking import registry_record
 from collective.matomoaitracker.browser.tracking import token_auth_setting
+from collective.matomoaitracker.browser.tracking import tracking_enabled_setting
 from collective.matomoaitracker.connection import check_connection
 from collective.matomoaitracker.interfaces import IMatomoAITrackingControlPanel
 from collective.matomoaitracker.status import STATUS
@@ -43,10 +44,25 @@ class MatomoAITrackingControlPanelForm(RegistryEditForm):
         else:
             widget.placeholder = _("No token stored")
 
+        # Show the switch of the environment, which cannot be changed here.
+        enabled, from_environment = tracking_enabled_setting()
+        if from_environment:
+            widget = self.widgets["matomo_tracking_enabled"]  # pyright: ignore[reportOptionalSubscript]
+            widget.value = ["selected"] if enabled else []
+            widget.disabled = "disabled"
+            widget.description = _(
+                "Set by the MATOMO_AI_TRACKING_ENABLED environment variable"
+            )
+            # The checkbox shows the description of its term.
+            widget.updateTerms()
+
     def applyChanges(self, data):
         if not data.get("matomo_token_auth"):
             # Saving the form with an empty token field keeps the stored one.
             data["matomo_token_auth"] = registry_record("matomo_token_auth") or ""
+        if tracking_enabled_setting()[1]:
+            # A disabled checkbox is not submitted: keep the stored setting.
+            data["matomo_tracking_enabled"] = registry_record("matomo_tracking_enabled")
         return super().applyChanges(data)
 
     @button.buttonAndHandler(_("Test connection"), name="test_connection")

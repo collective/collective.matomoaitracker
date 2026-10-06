@@ -21,6 +21,8 @@ import requests
 
 
 TOKEN_AUTH_ENVIRONMENT_VARIABLE = "MATOMO_AI_TOKEN_AUTH"  # noqa: S105 - a name
+ENABLED_ENVIRONMENT_VARIABLE = "MATOMO_AI_TRACKING_ENABLED"
+TRUTHY = frozenset(("1", "true", "yes", "on"))
 CACHE_STATUSES = frozenset(("hit", "miss", "pass", "pipe", "synth"))
 MAX_EVENTS = 500
 MAX_URL_LENGTH = 4096
@@ -57,6 +59,19 @@ def token_auth_setting():
     if from_environment:
         return from_environment, True
     return registry_record("matomo_token_auth") or "", False
+
+
+def tracking_enabled_setting():
+    """Return whether AI bots are tracked, and whether the environment says so.
+
+    The environment variable overrides the setting, so a copy of a production
+    database does not switch on tracking in another environment.  Any other
+    value than a truthy one switches tracking off.
+    """
+    from_environment = os.environ.get(ENABLED_ENVIRONMENT_VARIABLE, "").strip()
+    if from_environment:
+        return from_environment.lower() in TRUTHY, True
+    return bool(registry_record("matomo_tracking_enabled")), False
 
 
 def load_settings():
@@ -164,7 +179,7 @@ class MatomoAIChatbotTrackingView(BrowserView):
         if len(events) > MAX_EVENTS:
             return self.reply(413, {"error": f"At most {MAX_EVENTS} events"})
 
-        if not registry_record("matomo_tracking_enabled"):
+        if not tracking_enabled_setting()[0]:
             # Switched off: drop the events, the shipper does not retry them.
             STATUS.record_batch(tracked=0, rejected=0, skipped=len(events))
             return self.reply(

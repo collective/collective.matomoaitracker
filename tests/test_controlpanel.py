@@ -255,3 +255,35 @@ class ControlPanelTokenTestCase(TestCase):
             'placeholder="Set by the MATOMO_AI_TOKEN_AUTH environment variable"',
             self.browser.contents or "",
         )
+
+    def test_tracking_switched_by_environment(self):
+        api.portal.set_registry_record("matomoaitracker.matomo_tracking_enabled", True)
+        transaction.commit()
+
+        with patch.dict(os.environ, {"MATOMO_AI_TRACKING_ENABLED": "false"}):
+            self.open()
+            contents = self.browser.contents or ""
+            checkbox = self.browser.getControl(label="Track AI bots")
+            self.assertFalse(checkbox.selected)
+            self.assertTrue(checkbox.disabled)
+            self.assertIn(
+                "Set by the MATOMO_AI_TRACKING_ENABLED environment variable", contents
+            )
+
+            self.browser.getControl(label="Matomo Site ID").value = "7"
+            self.browser.getControl("Save").click()
+
+        # The stored setting is kept, for when the variable is removed.
+        self.assertTrue(
+            api.portal.get_registry_record("matomoaitracker.matomo_tracking_enabled")
+        )
+        self.assertEqual(
+            api.portal.get_registry_record("matomoaitracker.matomo_site_id"), 7
+        )
+
+    def test_tracking_switch_without_environment(self):
+        self.open()
+
+        checkbox = self.browser.getControl(label="Track AI bots")
+        self.assertFalse(checkbox.disabled)
+        self.assertNotIn("MATOMO_AI_TRACKING_ENABLED", self.browser.contents or "")

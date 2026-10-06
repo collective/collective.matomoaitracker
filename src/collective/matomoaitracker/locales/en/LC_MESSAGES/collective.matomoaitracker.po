@@ -1,7 +1,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2022-05-25 17:12+0000\n"
+"POT-Creation-Date: 2026-10-05 21:16+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI +ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -13,3 +13,183 @@ msgstr ""
 "Language-Name: English\n"
 "Preferred-Encodings: utf-8 latin1\n"
 "Domain: DOMAIN\n"
+
+#: collective/matomoaitracker/browser/controlpanel.py:43
+msgid "A token is stored"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:32
+msgid "AI assistants fetching a page for a user"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:33
+msgid "AI search crawlers"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:34
+msgid "AI training crawlers"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:89
+msgid "An auth token of a Matomo user with write access to the sites, created in Matomo under Personal, Security. Matomo needs it for the time and client IP of the requests. The stored token is not shown: leave the field empty to keep it."
+msgstr ""
+
+#: collective/matomoaitracker/browser/templates/tracking_status.pt:40
+msgid "Batches"
+msgstr ""
+
+#: collective/matomoaitracker/browser/templates/tracking_status.pt:17
+msgid "Batches of AI bot requests this Zope instance received from the shipper since it started, at ${started}."
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:129
+msgid "Bot category dimension ID"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:149
+msgid "Bot name dimension ID"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:139
+msgid "Cache status dimension ID"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:115
+msgid "Categories tracked in the AI bots site"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:159
+msgid "Excluded URLs"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:43
+msgid "Invalid regular expression ${pattern}: ${error}"
+msgstr ""
+
+#: collective/matomoaitracker/browser/templates/tracking_status.pt:24
+msgid "Last batch"
+msgstr ""
+
+#: collective/matomoaitracker/browser/templates/tracking_status.pt:65
+msgid "Last error"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:100
+msgid "Matomo AI bots Site ID"
+msgstr ""
+
+#: collective/matomoaitracker/configure.zcml:21
+msgid "Matomo AI tracking: Install"
+msgstr ""
+
+#: collective/matomoaitracker/configure.zcml:29
+msgid "Matomo AI tracking: Uninstall"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:82
+msgid "Matomo Base URL"
+msgstr ""
+
+#: collective/matomoaitracker/browser/controlpanel.py:23
+msgid "Matomo Settings"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:73
+msgid "Matomo Site ID"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:88
+msgid "Matomo token"
+msgstr ""
+
+#: collective/matomoaitracker/browser/controlpanel.py:45
+msgid "No token stored"
+msgstr ""
+
+#: collective/matomoaitracker/browser/templates/tracking_status.pt:36
+msgid "None yet: is the shipper running?"
+msgstr ""
+
+#: collective/matomoaitracker/browser/templates/tracking_status.pt:58
+msgid "Not tracked"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:101
+msgid "Optional ID of a separate Matomo site in which every AI bot request, including search and training crawlers, is tracked. Matomo's AI Assistants reports leave crawlers out, this site shows how many requests they make, when, and how they load the server. It is separate, as crawler requests count as visits and would otherwise mix with human visitors. Leave empty to only track AI assistants."
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:140
+msgid "Optional ID of the custom dimension in the AI bots site that receives how Varnish handled the request: hit, miss or pass."
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:130
+msgid "Optional ID of the custom dimension in the AI bots site that receives the bot category: user, search or training."
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:150
+msgid "Optional ID of the custom dimension in the AI bots site that receives the name of the bot, like GPTBot or ClaudeBot."
+msgstr ""
+
+#: collective/matomoaitracker/configure.zcml:21
+msgid "Package to configure a new collective.matomoaitracker site"
+msgstr ""
+
+#: collective/matomoaitracker/browser/templates/tracking_status.pt:52
+msgid "Rejected by Matomo"
+msgstr ""
+
+#: collective/matomoaitracker/browser/controlpanel.py:83
+msgid "Remove token"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:160
+msgid "Requests for URL paths matching one of these regular expressions are not tracked, like images, styles and scripts of pages. One expression per line, matched case-insensitively against the path."
+msgstr ""
+
+#: collective/matomoaitracker/browser/controlpanel.py:39
+msgid "Set by the MATOMO_AI_TOKEN_AUTH environment variable"
+msgstr ""
+
+#: collective/matomoaitracker/browser/controlpanel.py:53
+msgid "Set by the MATOMO_AI_TRACKING_ENABLED environment variable"
+msgstr ""
+
+#: collective/matomoaitracker/browser/controlpanel.py:70
+msgid "Test connection"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:74
+msgid "The ID of the site in Matomo. AI assistants fetching pages for a user are tracked in its AI Chatbots report."
+msgstr ""
+
+#: collective/matomoaitracker/browser/controlpanel.py:89
+msgid "The Matomo token is removed."
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:83
+msgid "The base URL of the Matomo instance."
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:63
+msgid "Track AI bots"
+msgstr ""
+
+#: collective/matomoaitracker/browser/templates/tracking_status.pt:46
+msgid "Tracking requests sent"
+msgstr ""
+
+#: collective/matomoaitracker/browser/templates/tracking_status.pt:9
+msgid "Tracking status"
+msgstr ""
+
+#: collective/matomoaitracker/configure.zcml:29
+msgid "UnInstall the collective.matomoaitracker package"
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:64
+msgid "When switched off, AI bot requests are dropped instead of sent to Matomo. They are not tracked later when switching it on again."
+msgstr ""
+
+#: collective/matomoaitracker/interfaces.py:116
+msgid "Which AI bots are tracked in the AI bots site. AI assistants are always tracked in the AI Chatbots report of the Matomo site."
+msgstr ""

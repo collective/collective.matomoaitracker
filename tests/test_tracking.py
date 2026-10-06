@@ -259,6 +259,32 @@ class TrackingViewTestCase(TestCase):
         )
         self.assertEqual(self.matomo.bulk_requests, [])
 
+    def test_switched_off_by_environment(self):
+        self.configure_bot_site()
+        api.portal.set_registry_record("matomoaitracker.matomo_tracking_enabled", True)
+
+        for value in ("false", "0", "no", "unexpected"):
+            with (
+                self.subTest(value=value),
+                patch.dict(os.environ, {"MATOMO_AI_TRACKING_ENABLED": value}),
+            ):
+                status, result = self.call({"events": [event()]})
+
+                self.assertEqual(status, 200)
+                self.assertTrue(result["disabled"])
+        self.assertEqual(self.matomo.bulk_requests, [])
+
+    def test_switched_on_by_environment(self):
+        self.configure_bot_site()
+        api.portal.set_registry_record("matomoaitracker.matomo_tracking_enabled", False)
+
+        with patch.dict(os.environ, {"MATOMO_AI_TRACKING_ENABLED": "True"}):
+            status, result = self.call({"events": [event()]})
+
+        self.assertEqual(status, 200)
+        self.assertNotIn("disabled", result)
+        self.assertEqual(len(self.matomo.bulk_requests), 1)
+
     def test_categories_tracked_in_bot_site(self):
         self.configure_bot_site()
         api.portal.set_registry_record(
