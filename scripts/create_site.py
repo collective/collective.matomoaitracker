@@ -104,6 +104,10 @@ if CACHING_PROXIES:
     installer = get_installer(site)
     if not installer.is_product_installed("plone.app.caching"):
         installer.install_product("plone.app.caching")
+        # Apply the with-caching-proxy settings.
+        site.portal_setup.runAllImportStepsFromProfile(
+            "profile-plone.app.caching:with-caching-proxy"
+        )
     site.portal_setup.upgradeProfile("plone.app.caching:default")
     prefix = "plone.cachepurging.interfaces.ICachePurgingSettings"
     registry[f"{prefix}.enabled"] = True
