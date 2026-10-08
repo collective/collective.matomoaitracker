@@ -1,1 +1,0 @@
-The `MATOMO_AI_TRACKING_ENABLED` environment variable overrides the "Track AI bots" setting, which the control panel then shows read-only. Use it to track only in production, also when its database is copied to other environments.

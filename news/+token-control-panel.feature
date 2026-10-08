@@ -1,1 +1,0 @@
-The Matomo token can be pasted in the control panel. It is never sent back to the browser, saving the form with an empty token field keeps it, and "Remove token" removes it. The `MATOMO_AI_TOKEN_AUTH` environment variable still works and overrides the stored token.
