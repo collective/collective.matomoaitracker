@@ -43,5 +43,10 @@ var/
 /venv/
 constraints*.txt
 requirements*.txt
+
 # local environment
 .env
+
+# We don't need a uv lock file.
+# Ignoring it also prevents hatchling from adding this large file to the sdist.
+uv.lock
