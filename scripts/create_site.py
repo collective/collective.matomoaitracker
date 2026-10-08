@@ -1,5 +1,6 @@
 from AccessControl.SecurityManagement import newSecurityManager
 from collective.matomoaitracker.interfaces import IBrowserLayer
+from plone.base.utils import get_installer
 from Products.CMFPlone.factory import _DEFAULT_PROFILE
 from Products.CMFPlone.factory import addPloneSite
 from Products.GenericSetup.tool import SetupTool
@@ -100,6 +101,10 @@ transaction.commit()
 # Purge Varnish when content changes, see varnish/default.vcl.
 CACHING_PROXIES = os.getenv("CACHING_PROXIES")
 if CACHING_PROXIES:
+    installer = get_installer(site)
+    if not installer.is_product_installed("plone.app.caching"):
+        installer.install_product("plone.app.caching")
+    site.portal_setup.upgradeProfile("plone.app.caching:default")
     prefix = "plone.cachepurging.interfaces.ICachePurgingSettings"
     registry[f"{prefix}.enabled"] = True
     registry[f"{prefix}.cachingProxies"] = tuple(CACHING_PROXIES.split())
