@@ -89,7 +89,7 @@ def caching_policy(request, stack):
     if request.param == "moderate":
         original_mapping = stack.registry_get(OPERATION_MAPPING)
         original_smaxage = stack.registry_get(MODERATE_SMAXAGE)
-        mapping = dict(original_mapping)
+        mapping = dict(original_mapping) if original_mapping is not None else {}
         for rule in ("plone.content.folderView", "plone.content.itemView"):
             mapping[rule] = "plone.app.caching.moderateCaching"
         stack.registry_set({OPERATION_MAPPING: mapping, MODERATE_SMAXAGE: SMAXAGE})

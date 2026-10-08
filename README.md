@@ -116,6 +116,9 @@ variables or in a `.env` file, see `.env.example`:
 cp .env.example .env
 ```
 
+Note: if you change anything to the `create_site.py` script, you must remove the
+`matomoaitracker-plone` image, otherwise this has no effect.
+
 Simulate an AI chatbot visit, and see what reached the fake Matomo a few seconds
 later:
 
